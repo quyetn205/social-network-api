@@ -78,12 +78,12 @@ export interface Notification {
 
 export interface BookmarksResponse {
   posts: Post[]
-  next_cursor: number | null
+  next_cursor: string | null
 }
 
 export interface NotificationsResponse {
   notifications: Notification[]
-  next_cursor: number | null
+  next_cursor: string | null
 }
 
 export interface CursorPaginatedResponse<T> {
