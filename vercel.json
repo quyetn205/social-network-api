@@ -1,22 +1,27 @@
 {
   "builds": [
     {
-      "src": "frontend/backend/index.py",
-      "use": "@vercel/python"
+      "src": "api/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "frontend/backend/index.py"
+      "dest": "api/index.js"
     },
     {
       "src": "/health",
-      "dest": "frontend/backend/index.py"
+      "dest": "api/index.js"
     },
     {
       "src": "/(.*)",
-      "destination": "/frontend/index.html"
+      "dest": "frontend/dist/$1"
     }
   ]
 }
