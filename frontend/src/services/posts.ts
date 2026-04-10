@@ -1,4 +1,4 @@
-import { api } from './lib/api'
+import { api } from '../lib/api'
 import type { Post, Topic, Comment, LikeStatus } from './types'
 
 export interface PaginatedPosts {

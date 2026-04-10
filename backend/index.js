@@ -146,6 +146,33 @@ async function POST_auth_login(request) {
   return ok({ access_token, refresh_token, token_type: 'bearer', expires_in: 900 })
 }
 
+// ─── POST /api/v1/auth/refresh ───────────────────────────────────────────────
+async function POST_auth_refresh(request) {
+  const body = await request.json()
+  const { refresh_token } = body
+  if (!refresh_token) return err(400, 'refresh_token is required')
+
+  try {
+    const payload = verifyToken(refresh_token)
+    if (!payload || payload.type !== 'refresh') return err(401, 'Invalid refresh token')
+    const userId = payload.sub
+
+    const { rows: userRows } = await sql`SELECT * FROM users WHERE id = ${userId}`
+    if (!userRows[0]) return err(401, 'User not found')
+
+    const newAccessToken = signToken(userId, 'access')
+    const newRefreshToken = signToken(userId, 'refresh')
+
+    const tokenHash = await bcrypt.hash(newRefreshToken, 10)
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    await sql`INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (${userId}, ${tokenHash}, ${expiresAt})`
+
+    return ok({ access_token: newAccessToken, refresh_token: newRefreshToken, token_type: 'bearer', expires_in: 900 })
+  } catch {
+    return err(401, 'Invalid or expired refresh token')
+  }
+}
+
 // ─── GET /api/v1/users/me ─────────────────────────────────────────────────────
 async function GET_users_me(request) {
   const user = await getUserFromToken(request)
@@ -1071,6 +1098,7 @@ export async function POST(request) {
   try {
     if (path === '/api/v1/auth/login') return POST_auth_login(request)
     if (path === '/api/v1/auth/register') return POST_auth_register(request)
+    if (path === '/api/v1/auth/refresh') return POST_auth_refresh(request)
     if (path === '/api/v1/posts/' ) return POST_create_post(request)
 
     const commentsMatch = path.match(/^\/api\/v1\/posts\/(\d+)\/comments\/$/)
