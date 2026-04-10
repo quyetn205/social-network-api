@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { postsApi } from '../services/posts'
-import TopicSelector from '../components/ui/TopicSelector'
-import { useToast } from '../context/ToastContext'
+import { postsApi } from '../../services/posts'
+import TopicSelector from '../../components/ui/TopicSelector'
+import { useToast } from '../../context/ToastContext'
 
 export default function CreatePostForm() {
   const [content, setContent] = useState('')

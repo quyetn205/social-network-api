@@ -18,7 +18,7 @@ export default function SearchPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [hasMorePosts, setHasMorePosts] = useState(true)
   const [isLoadingPosts, setIsLoadingPosts] = useState(false)
-  const [searchTrigger, setSearchTrigger] = useState(0)
+  const [_searchTrigger, setSearchTrigger] = useState(0)
 
   const handleSearchInput = (value: string) => {
     setQuery(value)
@@ -219,7 +219,7 @@ export default function SearchPage() {
                   to={`/profile/${u.id}`}
                   className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
                 >
-                  <Avatar username={u.username} size="sm" />
+                  <Avatar username={u.username} avatarUrl={(u as any).avatar_url} size="sm" />
                   <div className="min-w-0">
                     <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{u.username}</div>
                     <div className="text-xs text-gray-400 dark:text-gray-500 truncate">{u.email}</div>
@@ -241,7 +241,7 @@ function PostCardSimple({ post }: { post: Post }) {
       <div className="flex items-center gap-3">
         {post.author && (
           <Link to={`/profile/${post.author.id}`}>
-            <Avatar username={post.author.username} size="sm" />
+            <Avatar username={post.author.username} avatarUrl={post.author.avatar_url} size="sm" />
           </Link>
         )}
         <div className="flex-1 min-w-0">

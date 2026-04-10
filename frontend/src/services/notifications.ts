@@ -1,5 +1,4 @@
 import { api } from '../lib/api'
-import type { Post } from './types'
 
 export interface Notification {
   id: number
@@ -12,13 +11,14 @@ export interface Notification {
     comment_id?: number
     message?: string
   }
+  actor_avatar_url?: string
   is_read: boolean
   created_at: string
 }
 
 export interface NotificationsResponse {
   notifications: Notification[]
-  next_cursor: number | null
+  next_cursor: string | null
 }
 
 export interface UnreadCountResponse {
@@ -26,9 +26,9 @@ export interface UnreadCountResponse {
 }
 
 export const notificationsApi = {
-  getNotifications: async (cursor?: number, limit = 20): Promise<NotificationsResponse> => {
+  getNotifications: async (cursor?: string, limit = 20): Promise<NotificationsResponse> => {
     const params: Record<string, string> = { limit: String(limit) }
-    if (cursor !== undefined) params.cursor = String(cursor)
+    if (cursor !== undefined) params.cursor = cursor
     const res = await api.get<NotificationsResponse>('/notifications/', { params })
     return res.data
   },

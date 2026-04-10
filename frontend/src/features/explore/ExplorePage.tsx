@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { postsApi } from '../services/posts'
+import { postsApi } from '../../services/posts'
 import PostCard from '../feed/PostCard'
-import type { Post } from '../services/types'
-import { PostCardSkeleton } from '../components/ui/Skeleton'
+import type { Post } from '../../services/types'
+import { PostCardSkeleton } from '../../components/ui/Skeleton'
 
 const LIMIT = 10
 

@@ -21,7 +21,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Restore session on app load
   useEffect(() => {
     const token = sessionStorage.getItem('access_token')
-    const refreshToken = sessionStorage.getItem('refresh_token')
     const savedUser = sessionStorage.getItem('user')
     if (token && savedUser) {
       setAccessToken(token)

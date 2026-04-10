@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { usersApi } from '../services/users'
-import { postsApi } from '../services/posts'
-import TopicSelector from '../components/ui/TopicSelector'
-import { useAuth } from '../context/AuthContext'
-import { useToast } from '../context/ToastContext'
+import { usersApi } from '../../services/users'
+import TopicSelector from '../../components/ui/TopicSelector'
+import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import { useTheme } from '../../context/ThemeContext'
 
 export default function SettingsPage() {

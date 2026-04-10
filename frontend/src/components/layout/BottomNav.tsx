@@ -35,7 +35,7 @@ export default function BottomNav() {
         {user && (
           <NavLink
             to={`/profile/${user.id}`}
-            className={({ isActive }) =>
+            className={({ isActive: _isActive }) =>
               `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors ${
                 location.pathname.startsWith('/profile') && location.pathname.includes(String(user.id))
                   ? 'text-blue-500'

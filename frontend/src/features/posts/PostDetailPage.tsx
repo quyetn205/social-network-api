@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { postsApi } from '../services/posts'
-import { bookmarksApi } from '../services/bookmarks'
-import { api } from '../lib/api'
-import Avatar from '../components/ui/Avatar'
-import TopicBadge from '../components/ui/TopicBadge'
+import { postsApi } from '../../services/posts'
+import { bookmarksApi } from '../../services/bookmarks'
+import { api } from '../../lib/api'
+import Avatar from '../../components/ui/Avatar'
+import TopicBadge from '../../components/ui/TopicBadge'
 import CommentItem from './CommentItem'
-import { PostCardSkeleton, CommentSkeleton } from '../components/ui/Skeleton'
-import { useAuth } from '../context/AuthContext'
-import { useToast } from '../context/ToastContext'
-import type { Comment } from '../services/types'
+import { PostCardSkeleton, CommentSkeleton } from '../../components/ui/Skeleton'
+import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
+import type { Comment } from '../../services/types'
 
 function timeAgo(dateStr: string) {
   const now = Date.now()
@@ -39,7 +39,7 @@ export default function PostDetailPage() {
 
   const { data: likeStatus } = useQuery({
     queryKey: ['like-status', postId],
-    queryFn: () => api.get<{ liked: boolean }>(`/likes/posts/${postId}/status/`).then(r => r.data),
+    queryFn: () => api.get<{ liked: boolean }>(`/likes/posts/${postId}/status/`).then((r: { data: { liked: boolean } }) => r.data),
     enabled: !!postId,
   })
 
@@ -52,10 +52,12 @@ export default function PostDetailPage() {
     if (post) setLikeCount(post.likes_count)
   }, [post])
 
-  const { data: comments, isLoading: loadingComments } = useQuery({
+  const { data: commentsData, isLoading: loadingComments } = useQuery({
     queryKey: ['comments', postId],
     queryFn: () => postsApi.getComments(Number(postId)),
   })
+
+  const comments = commentsData?.comments ?? []
 
   const commentMutation = useMutation({
     mutationFn: (data: { content: string; parentId?: number }) =>
@@ -150,7 +152,7 @@ export default function PostDetailPage() {
 
         {post.topics.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {post.topics.map((t) => (
+            {post.topics.map((t: { id: number; name: string; description: string | null }) => (
               <TopicBadge key={t.id} topic={t} />
             ))}
           </div>

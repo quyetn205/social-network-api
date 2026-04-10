@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { postsApi } from '../services/posts'
-import type { PostWithScore } from '../services/types'
+import { postsApi } from '../../services/posts'
+import type { PostWithScore } from '../../services/types'
 import PostCard from './PostCard'
 import CreatePostForm from './CreatePostForm'
-import { PostCardSkeleton } from '../components/ui/Skeleton'
+import { PostCardSkeleton } from '../../components/ui/Skeleton'
 
 const LIMIT = 20
 
@@ -21,7 +21,7 @@ export default function FeedPage() {
   cursorRef.current = cursor
   hasMoreRef.current = hasMore
 
-  const { isLoading, isFetching, refetch } = useQuery({
+  const { isLoading, isFetching } = useQuery({
     queryKey: ['feed', page],
     queryFn: async () => {
       if (isFetchingRef.current) return null

@@ -4,6 +4,7 @@ export interface User {
   id: number
   username: string
   email: string
+  avatar_url?: string
   date_of_birth: string | null
   is_admin: boolean
   created_at: string

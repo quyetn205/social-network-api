@@ -10,7 +10,7 @@ export const api = axios.create({
 let isRefreshing = false
 let refreshQueue: Array<(token: string) => void> = []
 
-function processQueue(error: Error | null, token: string | null = null) {
+function processQueue(_error: Error | null, token: string | null = null) {
   refreshQueue.forEach(cb => cb(token || ''))
   refreshQueue = []
 }

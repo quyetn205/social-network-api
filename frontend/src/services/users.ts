@@ -1,10 +1,11 @@
-import { api } from './lib/api'
+import { api } from '../lib/api'
 import type { User, UserProfile, FollowStatus, PreferenceWithTopics, PostWithScore } from './types'
 
 export interface SearchUserResult {
   id: number
   username: string
   email: string
+  avatar_url?: string
   created_at: string
 }
 

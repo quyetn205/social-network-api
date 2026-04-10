@@ -14,7 +14,7 @@ export default function Navbar() {
   const [results, setResults] = useState<{ id: number; username: string; email: string }[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
+  const [, setShowNotifications] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const notifRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)

@@ -1,5 +1,5 @@
 import { api } from './lib/api'
-import type { Post, PostWithScore, Topic, Comment, LikeStatus } from './types'
+import type { Post, Topic, Comment, LikeStatus } from './types'
 
 export interface PaginatedPosts {
   items: Post[]
@@ -53,8 +53,8 @@ export const postsApi = {
     return res.data
   },
 
-  getComments: async (postId: number): Promise<Comment[]> => {
-    const res = await api.get<Comment[]>(`/posts/${postId}/comments/`)
+  getComments: async (postId: number): Promise<{ comments: Comment[]; next_cursor: string | null }> => {
+    const res = await api.get<{ comments: Comment[]; next_cursor: string | null }>(`/posts/${postId}/comments/`)
     return res.data
   },
 

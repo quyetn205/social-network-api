@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { postsApi } from '../services/posts'
-import { bookmarksApi } from '../services/bookmarks'
-import type { PostWithScore } from '../services/types'
-import Avatar from '../components/ui/Avatar'
-import TopicBadge from '../components/ui/TopicBadge'
-import TopicSelector from '../components/ui/TopicSelector'
-import { useAuth } from '../context/AuthContext'
-import { useToast } from '../context/ToastContext'
+import { postsApi } from '../../services/posts'
+import { bookmarksApi } from '../../services/bookmarks'
+import type { PostWithScore, Topic } from '../../services/types'
+import Avatar from '../../components/ui/Avatar'
+import TopicBadge from '../../components/ui/TopicBadge'
+import TopicSelector from '../../components/ui/TopicSelector'
+import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 
 interface PostCardProps {
   post: PostWithScore
@@ -33,7 +33,7 @@ export default function PostCard({ post }: PostCardProps) {
   const [bookmarked, setBookmarked] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editContent, setEditContent] = useState(post.content)
-  const [editTopics, setEditTopics] = useState<number[]>(post.topics.map(t => t.id))
+  const [editTopics, setEditTopics] = useState<number[]>(post.topics.map((t: Topic) => t.id))
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const isOwner = user?.id === post.author_id
@@ -42,7 +42,7 @@ export default function PostCard({ post }: PostCardProps) {
     mutationFn: () => liked ? postsApi.unlikePost(post.id) : postsApi.likePost(post.id),
     onMutate: () => {
       setLiked(!liked)
-      setLikeCount(c => c + (liked ? -1 : 1))
+      setLikeCount((c: number) => c + (liked ? -1 : 1))
     },
     onError: () => {
       setLiked(liked)
@@ -57,7 +57,7 @@ export default function PostCard({ post }: PostCardProps) {
     mutationFn: () => postsApi.updatePost(post.id, editContent, editTopics),
     onSuccess: (updated) => {
       queryClient.setQueryData(['feed'], (old: PostWithScore[] | undefined) =>
-        old?.map(p => p.id === post.id ? { ...p, ...updated } : p)
+        old?.map((p: PostWithScore) => p.id === post.id ? { ...p, ...(updated as PostWithScore) } : p)
       )
       queryClient.setQueryData(['post', String(post.id)], updated)
       setEditing(false)
@@ -127,7 +127,7 @@ export default function PostCard({ post }: PostCardProps) {
       <div className="flex items-center gap-3">
         {post.author && (
           <Link to={`/profile/${post.author.id}`}>
-            <Avatar username={post.author.username} />
+            <Avatar username={post.author.username} avatarUrl={post.author.avatar_url} />
           </Link>
         )}
         <div className="flex-1 min-w-0">
@@ -189,7 +189,7 @@ export default function PostCard({ post }: PostCardProps) {
       {/* Topics */}
       {post.topics.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {post.topics.map((t) => (
+          {post.topics.map((t: Topic) => (
             <TopicBadge key={t.id} topic={t} />
           ))}
         </div>

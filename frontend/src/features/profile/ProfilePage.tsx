@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { usersApi } from '../services/users'
-import type { PostWithScore, User } from '../services/types'
-import Avatar from '../components/ui/Avatar'
+import { usersApi } from '../../services/users'
+import type { PostWithScore, User } from '../../services/types'
+import Avatar from '../../components/ui/Avatar'
 import PostCard from '../feed/PostCard'
-import { ProfileSkeleton, PostCardSkeleton, UserListSkeleton } from '../components/ui/Skeleton'
-import { useAuth } from '../context/AuthContext'
+import { ProfileSkeleton, PostCardSkeleton, UserListSkeleton } from '../../components/ui/Skeleton'
+import { useAuth } from '../../context/AuthContext'
 
 type Tab = 'posts' | 'followers' | 'following'
 
@@ -99,7 +99,7 @@ export default function ProfilePage() {
       {/* Profile card */}
       <div className="bg-white dark:bg-dark-card rounded-xl border border-gray-200 dark:border-dark-border p-6">
         <div className="flex items-center gap-4">
-          <Avatar username={user.username} size="lg" />
+          <Avatar username={user.username} avatarUrl={user.avatar_url} size="lg" />
           <div className="flex-1">
             <h1 className="text-xl font-bold text-gray-900 dark:text-dark-text">{user.username}</h1>
             <p className="text-gray-500 dark:text-dark-muted text-sm">{user.email}</p>
@@ -187,7 +187,7 @@ export default function ProfilePage() {
                     to={`/profile/${u.id}`}
                     className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-bg transition-colors"
                   >
-                    <Avatar username={u.username} size="sm" />
+                    <Avatar username={u.username} avatarUrl={u.avatar_url} size="sm" />
                     <div className="min-w-0">
                       <div className="font-medium text-gray-900 dark:text-dark-text truncate text-sm">{u.username}</div>
                       <div className="text-xs text-gray-400 dark:text-dark-muted truncate">{u.email}</div>
@@ -213,7 +213,7 @@ export default function ProfilePage() {
                     to={`/profile/${u.id}`}
                     className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-bg transition-colors"
                   >
-                    <Avatar username={u.username} size="sm" />
+                    <Avatar username={u.username} avatarUrl={u.avatar_url} size="sm" />
                     <div className="min-w-0">
                       <div className="font-medium text-gray-900 dark:text-dark-text truncate text-sm">{u.username}</div>
                       <div className="text-xs text-gray-400 dark:text-dark-muted truncate">{u.email}</div>

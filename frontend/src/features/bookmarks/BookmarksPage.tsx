@@ -89,7 +89,7 @@ export default function BookmarksPage() {
   const { showToast } = useToast()
   const queryClient = useQueryClient()
   const [posts, setPosts] = useState<Post[]>([])
-  const [cursor, setCursor] = useState<number | null>(null)
+  const [cursor, setCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const initializedRef = useRef(false)
@@ -104,7 +104,7 @@ export default function BookmarksPage() {
   if (initialData && !initializedRef.current) {
     initializedRef.current = true
     setPosts(initialData.posts)
-    setCursor(initialData.next_cursor)
+    setCursor(initialData.next_cursor as string | null)
     setHasMore(initialData.next_cursor !== null)
   }
 
@@ -112,7 +112,7 @@ export default function BookmarksPage() {
     if (!hasMore || isLoadingMore || cursor === null) return
     setIsLoadingMore(true)
     try {
-      const data = await bookmarksApi.getBookmarks(cursor, 20)
+      const data = await bookmarksApi.getBookmarks(cursor ?? undefined, 20)
       setPosts(prev => [...prev, ...data.posts])
       setCursor(data.next_cursor)
       setHasMore(data.next_cursor !== null)

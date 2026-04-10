@@ -1,16 +1,15 @@
 interface AvatarProps {
   username: string
+  avatarUrl?: string
   size?: 'sm' | 'md' | 'lg'
 }
 
-export default function Avatar({ username, size = 'md' }: AvatarProps) {
+export default function Avatar({ username, avatarUrl, size = 'md' }: AvatarProps) {
   const sizeClass = {
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
     lg: 'w-16 h-16 text-lg',
   }[size]
-
-  const initials = username.slice(0, 2).toUpperCase()
 
   const colors = [
     'bg-blue-500',
@@ -22,6 +21,17 @@ export default function Avatar({ username, size = 'md' }: AvatarProps) {
   ]
   const colorIndex = username.charCodeAt(0) % colors.length
 
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={username}
+        className={`${sizeClass} rounded-full object-cover flex-shrink-0`}
+      />
+    )
+  }
+
+  const initials = username.slice(0, 2).toUpperCase()
   return (
     <div
       className={`${sizeClass} ${colors[colorIndex]} rounded-full flex items-center justify-center text-white font-bold flex-shrink-0`}

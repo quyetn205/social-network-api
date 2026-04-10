@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { Comment } from '../services/types'
-import Avatar from '../components/ui/Avatar'
+import type { Comment } from '../../services/types'
+import Avatar from '../../components/ui/Avatar'
 
 interface CommentItemProps {
   comment: Comment

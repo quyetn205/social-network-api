@@ -71,7 +71,7 @@ function NotificationItem({ notification: n, onMarkRead }: NotificationItemProps
       <div className="shrink-0">
         {n.data.actor_id && n.data.actor_username ? (
           <Link to={`/profile/${n.data.actor_id}`}>
-            <Avatar username={n.data.actor_username} />
+            <Avatar username={n.data.actor_username} avatarUrl={n.actor_avatar_url} />
           </Link>
         ) : (
           <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-lg">

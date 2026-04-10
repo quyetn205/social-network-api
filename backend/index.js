@@ -38,6 +38,7 @@ async function createNotification(userId, type, data, actorAvatarUrl) {
 
 // ─── Rate Limiter ────────────────────────────────────────────────────────────
 const rateLimits = new Map()
+const loginLimits = new Map()
 function checkRateLimit(ip, max = 100, windowMs = 15 * 60 * 1000) {
   const now = Date.now()
   const record = rateLimits.get(ip) || { count: 0, resetAt: now + windowMs }
@@ -47,12 +48,38 @@ function checkRateLimit(ip, max = 100, windowMs = 15 * 60 * 1000) {
   if (record.count > max) return { limited: true, retryAfter: Math.ceil((record.resetAt - now) / 1000) }
   return { limited: false }
 }
+function checkLoginLimit(ip) {
+  const now = Date.now()
+  const record = loginLimits.get(ip) || { count: 0, resetAt: now + 15 * 60 * 1000 }
+  if (now > record.resetAt) { record.count = 0; record.resetAt = now + 15 * 60 * 1000 }
+  record.count++
+  loginLimits.set(ip, record)
+  if (record.count > 10) return { limited: true, retryAfter: Math.ceil((record.resetAt - now) / 1000) }
+  return { limited: false }
+}
+
+// ─── XSS Sanitizer ──────────────────────────────────────────────────────────
+function sanitize(str) {
+  if (typeof str !== 'string') return str
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+}
 
 // ─── Response helpers ─────────────────────────────────────────────────────────
 function ok(data) { return NextResponse.json(data) }
 function created(data) { return NextResponse.json(data, { status: 201 }) }
 function noContent() { return new NextResponse(null, { status: 204 }) }
 function err(status, msg) { return NextResponse.json({ detail: msg }, { status }) }
+function rateLimitResponse(retryAfter) {
+  return NextResponse.json({ detail: 'Too many requests. Please try again later.' }, {
+    status: 429,
+    headers: { 'Retry-After': String(retryAfter) },
+  })
+}
 
 // ─── POST /api/v1/auth/register ───────────────────────────────────────────────
 async function POST_auth_register(request) {
@@ -91,6 +118,13 @@ async function POST_auth_register(request) {
 
 // ─── POST /api/v1/auth/login ──────────────────────────────────────────────────
 async function POST_auth_login(request) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-real-ip')
+    || 'unknown'
+
+  const limited = checkLoginLimit(ip)
+  if (limited.limited) return rateLimitResponse(limited.retryAfter)
+
   const body = await request.json()
   const { username, password } = body
 
@@ -132,6 +166,9 @@ async function PUT_update_me(request) {
   const { username, date_of_birth, avatar_url } = body
 
   if (username !== undefined) {
+    if (!/^[a-zA-Z0-9_]{4,20}$/.test(username)) {
+      return err(400, 'Username must be 4–20 characters: letters, numbers, and underscore only')
+    }
     const { rows: existing } = await sql`
       SELECT id FROM users WHERE username = ${username} AND id != ${user.id}`
     if (existing.length > 0) return err(400, 'Username already taken')
@@ -678,7 +715,7 @@ async function POST_follow(request, userId) {
     await sql`INSERT INTO follows (follower_id, following_id) VALUES (${me.id}, ${userId})`
     await createNotification(userId, 'follow', {
       actor_id: me.id, actor_username: me.username
-    })
+    }, me.avatar_url)
     return created({ following: true })
   } catch (e) {
     if (e.code === '23505') return err(400, 'Already following')
@@ -846,11 +883,13 @@ async function GET_notifications(request) {
   let query
   if (cursor) {
     query = sql`
-      SELECT * FROM notifications WHERE user_id = ${user.id} AND id < ${cursor}
+      SELECT id, user_id, type, data, actor_avatar_url, is_read, created_at
+      FROM notifications WHERE user_id = ${user.id} AND id < ${parseInt(cursor, 10)}
       ORDER BY created_at DESC LIMIT ${limit + 1}`
   } else {
     query = sql`
-      SELECT * FROM notifications WHERE user_id = ${user.id}
+      SELECT id, user_id, type, data, actor_avatar_url, is_read, created_at
+      FROM notifications WHERE user_id = ${user.id}
       ORDER BY created_at DESC LIMIT ${limit + 1}`
   }
   const { rows } = await query

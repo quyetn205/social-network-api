@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   type VARCHAR(50) NOT NULL,
   data JSONB DEFAULT '{}',
+  actor_avatar_url TEXT DEFAULT '',
   is_read BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

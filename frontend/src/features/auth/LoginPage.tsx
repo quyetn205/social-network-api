@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
+import { useTheme } from '../../context/ThemeContext'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -9,7 +9,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
-  const { theme } = useTheme()
+  const { theme: _theme } = useTheme()
+  void _theme
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
