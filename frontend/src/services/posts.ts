@@ -1,16 +1,21 @@
 import { api } from '../lib/api'
-import type { Post, Topic, Comment, LikeStatus } from './types'
+import type { Post, PostWithScore, Topic, Comment, LikeStatus } from './types'
 
 export interface PaginatedPosts {
   items: Post[]
   next_cursor: string | null
 }
 
+export interface PaginatedPostsWithScore {
+  items: PostWithScore[]
+  next_cursor: string | null
+}
+
 export const postsApi = {
-  getFeed: async (cursor?: string, limit = 20): Promise<PaginatedPosts> => {
+  getFeed: async (cursor?: string, limit = 20): Promise<PaginatedPostsWithScore> => {
     const params: Record<string, string> = { limit: String(limit) }
     if (cursor !== undefined) params.cursor = String(cursor)
-    const res = await api.get<PaginatedPosts>('/posts/feed', { params })
+    const res = await api.get<PaginatedPostsWithScore>('/posts/feed', { params })
     return res.data
   },
 

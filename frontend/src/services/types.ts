@@ -67,15 +67,6 @@ export interface PreferenceWithTopics {
   topics: Topic[]
 }
 
-export interface Notification {
-  id: number
-  user_id: number
-  type: 'like' | 'comment' | 'follow' | 'mention'
-  data: Record<string, unknown>
-  is_read: boolean
-  created_at: string
-}
-
 export interface BookmarksResponse {
   posts: Post[]
   next_cursor: string | null
@@ -88,5 +79,5 @@ export interface NotificationsResponse {
 
 export interface CursorPaginatedResponse<T> {
   items: T[]
-  next_cursor: number | null
+  next_cursor: string | null
 }

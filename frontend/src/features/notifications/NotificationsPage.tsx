@@ -103,7 +103,7 @@ export default function NotificationsPage() {
   const { showToast } = useToast()
   const queryClient = useQueryClient()
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const [cursor, setCursor] = useState<number | null>(null)
+  const [cursor, setCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const initializedRef = useRef(false)
@@ -126,7 +126,7 @@ export default function NotificationsPage() {
     if (!hasMore || isLoadingMore || cursor === null) return
     setIsLoadingMore(true)
     try {
-      const data = await notificationsApi.getNotifications(cursor, 20)
+      const data = await notificationsApi.getNotifications(cursor ?? undefined, 20)
       setNotifications(prev => [...prev, ...data.notifications])
       setCursor(data.next_cursor)
       setHasMore(data.next_cursor !== null)
