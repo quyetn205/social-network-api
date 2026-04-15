@@ -1,0 +1,104 @@
+import {
+    createNotification,
+    created,
+    err,
+    getUserFromToken,
+    ok
+} from '../controllers/shared.controller.js';
+import {
+    deleteFollow,
+    insertFollow,
+    selectFollowRows,
+    selectFollowStatus,
+    selectUserExists
+} from '../repositories/follows.repository.js';
+
+export async function POST_follow(req, res, userId) {
+    const me = await getUserFromToken(req);
+    if (!me) return err(res, 401, 'Could not validate credentials');
+    if (me.id === Number(userId)) {
+        return err(res, 400, 'Cannot follow yourself');
+    }
+
+    const exists = await selectUserExists(userId);
+    if (!exists) return err(res, 404, 'User not found');
+
+    try {
+        await insertFollow(me.id, userId);
+        await createNotification(
+            userId,
+            'follow',
+            {
+                actor_id: me.id,
+                actor_username: me.username
+            },
+            me.avatar_url
+        );
+        return created(res, { following: true });
+    } catch (error) {
+        if (error.code === '23505') return err(res, 400, 'Already following');
+        throw error;
+    }
+}
+
+export async function DELETE_unfollow(req, res, userId) {
+    const me = await getUserFromToken(req);
+    if (!me) return err(res, 401, 'Could not validate credentials');
+
+    const removed = await deleteFollow(me.id, userId);
+    if (!removed) return err(res, 404, 'Not following');
+    return ok(res, { following: false });
+}
+
+export async function GET_followers(req, res, userId) {
+    await getUserFromToken(req);
+    const cursor = req.query.cursor;
+    const limit = parseInt(req.query.limit || '20', 10);
+    const { rows, hasMore } = await selectFollowRows(
+        userId,
+        'followers',
+        cursor,
+        limit
+    );
+    const items = rows.map((r) => ({
+        id: r.id,
+        username: r.username,
+        email: r.email,
+        created_at: r.created_at
+    }));
+    const next_cursor =
+        hasMore && items.length > 0
+            ? String(rows[rows.length - 1].follow_created_at)
+            : null;
+    return ok(res, { items, next_cursor });
+}
+
+export async function GET_following(req, res, userId) {
+    await getUserFromToken(req);
+    const cursor = req.query.cursor;
+    const limit = parseInt(req.query.limit || '20', 10);
+    const { rows, hasMore } = await selectFollowRows(
+        userId,
+        'following',
+        cursor,
+        limit
+    );
+    const items = rows.map((r) => ({
+        id: r.id,
+        username: r.username,
+        email: r.email,
+        created_at: r.created_at
+    }));
+    const next_cursor =
+        hasMore && items.length > 0
+            ? String(rows[rows.length - 1].follow_created_at)
+            : null;
+    return ok(res, { items, next_cursor });
+}
+
+export async function GET_follow_status(req, res, userId) {
+    const me = await getUserFromToken(req);
+    if (!me) return err(res, 401, 'Could not validate credentials');
+    const following = await selectFollowStatus(me.id, userId);
+    return ok(res, { following });
+}
