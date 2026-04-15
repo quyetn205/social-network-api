@@ -16,17 +16,21 @@ import {
 export async function POST_follow(req, res, userId) {
     const me = await getUserFromToken(req);
     if (!me) return err(res, 401, 'Could not validate credentials');
-    if (me.id === Number(userId)) {
+    const targetUserId = Number(userId);
+    if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
+        return err(res, 400, 'Invalid user id');
+    }
+    if (me.id === targetUserId) {
         return err(res, 400, 'Cannot follow yourself');
     }
 
-    const exists = await selectUserExists(userId);
+    const exists = await selectUserExists(targetUserId);
     if (!exists) return err(res, 404, 'User not found');
 
     try {
-        await insertFollow(me.id, userId);
+        await insertFollow(me.id, targetUserId);
         await createNotification(
-            userId,
+            targetUserId,
             'follow',
             {
                 actor_id: me.id,
@@ -36,7 +40,7 @@ export async function POST_follow(req, res, userId) {
         );
         return created(res, { following: true });
     } catch (error) {
-        if (error.code === '23505') return err(res, 400, 'Already following');
+        if (error.code === '23505') return ok(res, { following: true });
         throw error;
     }
 }
@@ -45,8 +49,13 @@ export async function DELETE_unfollow(req, res, userId) {
     const me = await getUserFromToken(req);
     if (!me) return err(res, 401, 'Could not validate credentials');
 
-    const removed = await deleteFollow(me.id, userId);
-    if (!removed) return err(res, 404, 'Not following');
+    const targetUserId = Number(userId);
+    if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
+        return err(res, 400, 'Invalid user id');
+    }
+
+    const removed = await deleteFollow(me.id, targetUserId);
+    if (!removed) return ok(res, { following: false });
     return ok(res, { following: false });
 }
 

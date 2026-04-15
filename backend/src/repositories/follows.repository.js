@@ -16,25 +16,47 @@ export async function deleteFollow(followerId, followingId) {
 }
 
 export async function selectFollowRows(userId, direction, cursor, limit) {
-    const column = direction === 'followers' ? 'following_id' : 'follower_id';
-    const joinColumn =
-        direction === 'followers' ? 'follower_id' : 'following_id';
-    let query;
-    if (cursor) {
-        query = sql`
-      SELECT u.id, u.username, u.email, u.created_at, f.created_at as follow_created_at FROM follows f
-      JOIN users u ON u.id = f.${joinColumn} WHERE f.${column} = ${userId} AND f.created_at < ${cursor}
-      ORDER BY f.created_at DESC
-      LIMIT ${limit + 1}`;
+    const isFollowers = direction === 'followers';
+    let rows;
+
+    if (isFollowers) {
+        if (cursor) {
+            ({ rows } = await sql`
+            SELECT u.id, u.username, u.email, u.created_at, f.created_at AS follow_created_at
+            FROM follows f
+            JOIN users u ON u.id = f.follower_id
+            WHERE f.following_id = ${userId} AND f.created_at < ${cursor}
+            ORDER BY f.created_at DESC
+            LIMIT ${limit + 1}`);
+        } else {
+            ({ rows } = await sql`
+            SELECT u.id, u.username, u.email, u.created_at, f.created_at AS follow_created_at
+            FROM follows f
+            JOIN users u ON u.id = f.follower_id
+            WHERE f.following_id = ${userId}
+            ORDER BY f.created_at DESC
+            LIMIT ${limit + 1}`);
+        }
     } else {
-        query = sql`
-      SELECT u.id, u.username, u.email, u.created_at, f.created_at as follow_created_at FROM follows f
-      JOIN users u ON u.id = f.${joinColumn} WHERE f.${column} = ${userId}
-      ORDER BY f.created_at DESC
-      LIMIT ${limit + 1}`;
+        if (cursor) {
+            ({ rows } = await sql`
+            SELECT u.id, u.username, u.email, u.created_at, f.created_at AS follow_created_at
+            FROM follows f
+            JOIN users u ON u.id = f.following_id
+            WHERE f.follower_id = ${userId} AND f.created_at < ${cursor}
+            ORDER BY f.created_at DESC
+            LIMIT ${limit + 1}`);
+        } else {
+            ({ rows } = await sql`
+            SELECT u.id, u.username, u.email, u.created_at, f.created_at AS follow_created_at
+            FROM follows f
+            JOIN users u ON u.id = f.following_id
+            WHERE f.follower_id = ${userId}
+            ORDER BY f.created_at DESC
+            LIMIT ${limit + 1}`);
+        }
     }
 
-    const { rows } = await query;
     return { rows: rows.slice(0, limit), hasMore: rows.length > limit };
 }
 
