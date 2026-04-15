@@ -38,7 +38,7 @@ export default function PostCard({ post }: PostCardProps) {
         staleTime: 300000
     });
 
-    const { data: bookmarkStatus } = useQuery({
+    const { data: bookmarkStatus, isLoading: isBookmarkLoading } = useQuery({
         queryKey: ['bookmarkStatus', post.id],
         queryFn: () =>
             api
@@ -73,12 +73,17 @@ export default function PostCard({ post }: PostCardProps) {
         mutationFn: () =>
             liked ? postsApi.unlikePost(post.id) : postsApi.likePost(post.id),
         onMutate: () => {
+            const prevLiked = liked;
+            const prevCount = likeCount;
             setLiked(!liked);
             setLikeCount((c: number) => c + (liked ? -1 : 1));
+            return { prevLiked, prevCount };
         },
-        onError: () => {
-            setLiked(liked);
-            setLikeCount(likeCount);
+        onError: (_error, _vars, context) => {
+            if (context) {
+                setLiked(context.prevLiked);
+                setLikeCount(context.prevCount);
+            }
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['feed'] });
@@ -125,21 +130,27 @@ export default function PostCard({ post }: PostCardProps) {
     });
 
     const bookmarkMutation = useMutation({
-        mutationFn: () =>
-            bookmarked
+        mutationFn: async () => {
+            const current = await api
+                .get<{
+                    bookmarked: boolean;
+                }>(`/bookmarks/posts/${post.id}/status`)
+                .then((r) => r.data.bookmarked);
+            return current
                 ? bookmarksApi.unbookmark(post.id)
-                : bookmarksApi.bookmark(post.id),
-        onMutate: () => {
-            setBookmarked(!bookmarked);
+                : bookmarksApi.bookmark(post.id);
+        },
+        onSuccess: (result) => {
+            setBookmarked(result.bookmarked);
         },
         onError: () => {
-            setBookmarked(bookmarked);
             showToast('Không thể lưu bài viết', 'error');
         },
         onSettled: () => {
             queryClient.invalidateQueries({
                 queryKey: ['bookmarkStatus', post.id]
             });
+            queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
         }
     });
 
@@ -285,7 +296,9 @@ export default function PostCard({ post }: PostCardProps) {
 
                 <button
                     onClick={() => user && bookmarkMutation.mutate()}
-                    disabled={!user || bookmarkMutation.isPending}
+                    disabled={
+                        !user || bookmarkMutation.isPending || isBookmarkLoading
+                    }
                     className={`ml-auto flex items-center gap-1.5 text-sm transition-colors ${
                         bookmarked
                             ? 'text-yellow-500'

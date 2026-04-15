@@ -1150,7 +1150,8 @@ async function PUT_update_preferences(req, res) {
     if (!Array.isArray(topic_ids))
         return err(res, 400, 'topic_ids must be an array');
 
-    const { rowCount } = await sql`UPDATE user_preferences SET topic_ids = ${topic_ids}, updated_at = NOW() WHERE user_id = ${user.id}`;
+    const { rowCount } =
+        await sql`UPDATE user_preferences SET topic_ids = ${topic_ids}, updated_at = NOW() WHERE user_id = ${user.id}`;
     if (!rowCount) {
         await sql`INSERT INTO user_preferences (user_id, topic_ids, updated_at) VALUES (${user.id}, ${topic_ids}, NOW())`;
     }
@@ -1442,7 +1443,7 @@ async function POST_bookmark(req, res, postId) {
         await sql`INSERT INTO bookmarks (user_id, post_id) VALUES (${user.id}, ${postId})`;
         return created(res, { bookmarked: true });
     } catch (e) {
-        if (e.code === '23505') return err(res, 400, 'Already bookmarked');
+        if (e.code === '23505') return ok(res, { bookmarked: true });
         throw e;
     }
 }
@@ -1453,7 +1454,7 @@ async function DELETE_unbookmark(req, res, postId) {
     if (!user) return err(res, 401, 'Could not validate credentials');
     const result =
         await sql`DELETE FROM bookmarks WHERE user_id = ${user.id} AND post_id = ${postId} RETURNING *`;
-    if (!result.rowCount) return err(res, 404, 'Bookmark not found');
+    if (!result.rowCount) return ok(res, { bookmarked: false });
     return ok(res, { bookmarked: false });
 }
 
