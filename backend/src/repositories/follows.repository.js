@@ -70,3 +70,15 @@ export async function selectFollowStatus(followerId, followingId) {
         await sql`SELECT 1 FROM follows WHERE follower_id = ${followerId} AND following_id = ${followingId} LIMIT 1`;
     return rows.length > 0;
 }
+
+// Kiểm tra hai người có theo dõi lẫn nhau không.
+export async function selectFriendStatus(userAId, userBId) {
+    const { rows } = await sql`
+            SELECT 1
+            FROM follows f1
+            JOIN follows f2 ON f2.follower_id = f1.following_id AND f2.following_id = f1.follower_id
+            WHERE f1.follower_id = ${userAId}
+                AND f1.following_id = ${userBId}
+            LIMIT 1`;
+    return rows.length > 0;
+}

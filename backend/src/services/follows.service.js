@@ -7,6 +7,7 @@ import {
 } from '../controllers/shared.controller.js';
 import {
     deleteFollow,
+    selectFriendStatus,
     insertFollow,
     selectFollowRows,
     selectFollowStatus,
@@ -63,7 +64,8 @@ export async function DELETE_unfollow(req, res, userId) {
 
 // Lấy danh sách người theo dõi.
 export async function GET_followers(req, res, userId) {
-    await getUserFromToken(req);
+    const me = await getUserFromToken(req);
+    if (!me) return err(res, 401, 'Could not validate credentials');
     const cursor = req.query.cursor;
     const limit = parseInt(req.query.limit || '20', 10);
     const { rows, hasMore } = await selectFollowRows(
@@ -72,13 +74,21 @@ export async function GET_followers(req, res, userId) {
         cursor,
         limit
     );
-    const items = rows.map((r) => ({
-        id: r.id,
-        username: r.username,
-        email: r.email,
-        avatar_url: r.avatar_url,
-        created_at: r.created_at
-    }));
+    const items = await Promise.all(
+        rows.map(async (r) => {
+            const friend =
+                me.id !== Number(r.id) &&
+                (await selectFriendStatus(me.id, r.id));
+            return {
+                id: r.id,
+                username: r.username,
+                email: r.email,
+                avatar_url: r.avatar_url,
+                created_at: r.created_at,
+                friend
+            };
+        })
+    );
     const next_cursor =
         hasMore && items.length > 0
             ? String(rows[rows.length - 1].follow_created_at)
@@ -88,7 +98,8 @@ export async function GET_followers(req, res, userId) {
 
 // Lấy danh sách đang theo dõi.
 export async function GET_following(req, res, userId) {
-    await getUserFromToken(req);
+    const me = await getUserFromToken(req);
+    if (!me) return err(res, 401, 'Could not validate credentials');
     const cursor = req.query.cursor;
     const limit = parseInt(req.query.limit || '20', 10);
     const { rows, hasMore } = await selectFollowRows(
@@ -97,13 +108,21 @@ export async function GET_following(req, res, userId) {
         cursor,
         limit
     );
-    const items = rows.map((r) => ({
-        id: r.id,
-        username: r.username,
-        email: r.email,
-        avatar_url: r.avatar_url,
-        created_at: r.created_at
-    }));
+    const items = await Promise.all(
+        rows.map(async (r) => {
+            const friend =
+                me.id !== Number(r.id) &&
+                (await selectFriendStatus(me.id, r.id));
+            return {
+                id: r.id,
+                username: r.username,
+                email: r.email,
+                avatar_url: r.avatar_url,
+                created_at: r.created_at,
+                friend
+            };
+        })
+    );
     const next_cursor =
         hasMore && items.length > 0
             ? String(rows[rows.length - 1].follow_created_at)
@@ -116,5 +135,6 @@ export async function GET_follow_status(req, res, userId) {
     const me = await getUserFromToken(req);
     if (!me) return err(res, 401, 'Could not validate credentials');
     const following = await selectFollowStatus(me.id, userId);
-    return ok(res, { following });
+    const friend = following && (await selectFriendStatus(me.id, userId));
+    return ok(res, { following, friend });
 }
