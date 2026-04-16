@@ -73,6 +73,7 @@ export async function GET_followers(req, res, userId) {
         id: r.id,
         username: r.username,
         email: r.email,
+        avatar_url: r.avatar_url,
         created_at: r.created_at
     }));
     const next_cursor =
@@ -96,6 +97,7 @@ export async function GET_following(req, res, userId) {
         id: r.id,
         username: r.username,
         email: r.email,
+        avatar_url: r.avatar_url,
         created_at: r.created_at
     }));
     const next_cursor =

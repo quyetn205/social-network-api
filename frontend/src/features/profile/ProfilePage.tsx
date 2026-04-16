@@ -15,6 +15,38 @@ import { useToast } from '../../context/ToastContext';
 
 type Tab = 'posts' | 'followers' | 'following';
 
+function FollowUserCard({ user }: { user: User }) {
+    const { data: latestUser } = useQuery({
+        queryKey: ['user', user.id],
+        queryFn: () => usersApi.getUser(user.id),
+        enabled: !user.avatar_url
+    });
+
+    const resolvedAvatarUrl = user.avatar_url || latestUser?.avatar_url;
+
+    return (
+        <Link
+            key={user.id}
+            to={`/profile/${user.id}`}
+            className='flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-bg transition-colors'
+        >
+            <Avatar
+                username={user.username}
+                avatarUrl={resolvedAvatarUrl}
+                size='sm'
+            />
+            <div className='min-w-0'>
+                <div className='font-medium text-gray-900 dark:text-dark-text truncate text-sm'>
+                    {user.username}
+                </div>
+                <div className='text-xs text-gray-400 dark:text-dark-muted truncate'>
+                    {user.email}
+                </div>
+            </div>
+        </Link>
+    );
+}
+
 export default function ProfilePage() {
     const { userId } = useParams<{ userId: string }>();
     const { user: currentUser } = useAuth();
@@ -162,7 +194,10 @@ export default function ProfilePage() {
                         </p>
                         {user.date_of_birth && (
                             <p className='text-gray-400 dark:text-dark-muted text-xs mt-1'>
-                                Sinh nhật: {new Date(user.date_of_birth).toLocaleDateString('vi-VN')}
+                                Sinh nhật:{' '}
+                                {new Date(
+                                    user.date_of_birth
+                                ).toLocaleDateString('vi-VN')}
                             </p>
                         )}
                     </div>
@@ -284,25 +319,7 @@ export default function ProfilePage() {
                                 )}
                             <div className='grid grid-cols-2 gap-3'>
                                 {followersData?.items?.map((u: User) => (
-                                    <Link
-                                        key={u.id}
-                                        to={`/profile/${u.id}`}
-                                        className='flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-bg transition-colors'
-                                    >
-                                        <Avatar
-                                            username={u.username}
-                                            avatarUrl={u.avatar_url}
-                                            size='sm'
-                                        />
-                                        <div className='min-w-0'>
-                                            <div className='font-medium text-gray-900 dark:text-dark-text truncate text-sm'>
-                                                {u.username}
-                                            </div>
-                                            <div className='text-xs text-gray-400 dark:text-dark-muted truncate'>
-                                                {u.email}
-                                            </div>
-                                        </div>
-                                    </Link>
+                                    <FollowUserCard key={u.id} user={u} />
                                 ))}
                             </div>
                         </div>
@@ -320,25 +337,7 @@ export default function ProfilePage() {
                                 )}
                             <div className='grid grid-cols-2 gap-3'>
                                 {followingData?.items?.map((u: User) => (
-                                    <Link
-                                        key={u.id}
-                                        to={`/profile/${u.id}`}
-                                        className='flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-bg transition-colors'
-                                    >
-                                        <Avatar
-                                            username={u.username}
-                                            avatarUrl={u.avatar_url}
-                                            size='sm'
-                                        />
-                                        <div className='min-w-0'>
-                                            <div className='font-medium text-gray-900 dark:text-dark-text truncate text-sm'>
-                                                {u.username}
-                                            </div>
-                                            <div className='text-xs text-gray-400 dark:text-dark-muted truncate'>
-                                                {u.email}
-                                            </div>
-                                        </div>
-                                    </Link>
+                                    <FollowUserCard key={u.id} user={u} />
                                 ))}
                             </div>
                         </div>
