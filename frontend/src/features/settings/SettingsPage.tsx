@@ -76,6 +76,8 @@ export default function SettingsPage() {
             queryClient.invalidateQueries({ queryKey: ['feed'] });
             queryClient.invalidateQueries({ queryKey: ['post'] });
             queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
+            queryClient.invalidateQueries({ queryKey: ['followers'] });
+            queryClient.invalidateQueries({ queryKey: ['following'] });
             setAvatarFile(null);
             setAvatarPreview(updatedUser.avatar_url || '');
             showToast('Cập nhật thông tin thành công!', 'success');

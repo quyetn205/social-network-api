@@ -22,7 +22,7 @@ export async function selectFollowRows(userId, direction, cursor, limit) {
     if (isFollowers) {
         if (cursor) {
             ({ rows } = await sql`
-            SELECT u.id, u.username, u.email, u.created_at, f.created_at AS follow_created_at
+            SELECT u.id, u.username, u.email, u.avatar_url, u.created_at, f.created_at AS follow_created_at
             FROM follows f
             JOIN users u ON u.id = f.follower_id
             WHERE f.following_id = ${userId} AND f.created_at < ${cursor}
@@ -30,7 +30,7 @@ export async function selectFollowRows(userId, direction, cursor, limit) {
             LIMIT ${limit + 1}`);
         } else {
             ({ rows } = await sql`
-            SELECT u.id, u.username, u.email, u.created_at, f.created_at AS follow_created_at
+            SELECT u.id, u.username, u.email, u.avatar_url, u.created_at, f.created_at AS follow_created_at
             FROM follows f
             JOIN users u ON u.id = f.follower_id
             WHERE f.following_id = ${userId}
@@ -40,7 +40,7 @@ export async function selectFollowRows(userId, direction, cursor, limit) {
     } else {
         if (cursor) {
             ({ rows } = await sql`
-            SELECT u.id, u.username, u.email, u.created_at, f.created_at AS follow_created_at
+            SELECT u.id, u.username, u.email, u.avatar_url, u.created_at, f.created_at AS follow_created_at
             FROM follows f
             JOIN users u ON u.id = f.following_id
             WHERE f.follower_id = ${userId} AND f.created_at < ${cursor}
@@ -48,7 +48,7 @@ export async function selectFollowRows(userId, direction, cursor, limit) {
             LIMIT ${limit + 1}`);
         } else {
             ({ rows } = await sql`
-            SELECT u.id, u.username, u.email, u.created_at, f.created_at AS follow_created_at
+            SELECT u.id, u.username, u.email, u.avatar_url, u.created_at, f.created_at AS follow_created_at
             FROM follows f
             JOIN users u ON u.id = f.following_id
             WHERE f.follower_id = ${userId}
