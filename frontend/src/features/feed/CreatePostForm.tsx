@@ -3,23 +3,27 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { postsApi } from '../../services/posts';
 import TopicSelector from '../../components/ui/TopicSelector';
 import { useToast } from '../../context/ToastContext';
+import type { PostVisibility } from '../../services/types';
 
+// Hiển thị form tạo bài viết.
 export default function CreatePostForm() {
     const [content, setContent] = useState('');
     const [selectedTopics, setSelectedTopics] = useState<number[]>([]);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [visibility, setVisibility] = useState<PostVisibility>('public');
     const queryClient = useQueryClient();
     const { showToast } = useToast();
 
     const createMutation = useMutation({
         mutationFn: () =>
-            postsApi.createPost(content, selectedTopics, imageFile),
+            postsApi.createPost(content, selectedTopics, imageFile, visibility),
         onSuccess: () => {
             setContent('');
             setSelectedTopics([]);
             setImageFile(null);
             setImagePreview(null);
+            setVisibility('public');
             queryClient.invalidateQueries({ queryKey: ['feed'] });
             showToast('Bài viết đã được đăng!', 'success');
         },
@@ -42,6 +46,27 @@ export default function CreatePostForm() {
                 selected={selectedTopics}
                 onChange={setSelectedTopics}
             />
+
+            <div>
+                <label className='block text-sm font-medium text-gray-600 dark:text-dark-muted mb-1'>
+                    Ai có thể xem bài viết này?
+                </label>
+                <select
+                    value={visibility}
+                    onChange={(e) =>
+                        setVisibility(e.target.value as PostVisibility)
+                    }
+                    className='w-full border border-gray-200 dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-dark-bg text-gray-900 dark:text-dark-text'
+                >
+                    <option value='public'>Công khai</option>
+                    <option value='friend'>Bạn bè</option>
+                    <option value='private'>Chỉ mình tôi</option>
+                </select>
+                <p className='text-xs text-gray-400 dark:text-dark-muted mt-1'>
+                    Công khai: ai cũng thấy. Bạn bè: người theo dõi lẫn nhau.
+                    Chỉ mình tôi: riêng tư.
+                </p>
+            </div>
 
             {imagePreview && (
                 <div className='overflow-hidden rounded-lg border border-gray-200 dark:border-dark-border bg-gray-50 dark:bg-dark-bg'>

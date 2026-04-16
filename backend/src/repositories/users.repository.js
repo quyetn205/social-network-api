@@ -1,11 +1,13 @@
 import { sql } from '../../db.js';
 
+// Lấy thông tin công khai của người dùng.
 export async function selectPublicUserById(userId) {
     const { rows } =
         await sql`SELECT id, username, email, avatar_url, date_of_birth, is_admin, created_at FROM users WHERE id = ${userId}`;
     return rows[0] || null;
 }
 
+// Cập nhật hồ sơ người dùng hiện tại.
 export async function updateMe(
     userId,
     { username, date_of_birth, avatar_url }
@@ -20,34 +22,40 @@ export async function updateMe(
     return rows[0] || null;
 }
 
+// Kiểm tra trùng tên đăng nhập.
 export async function usernameTaken(username, userId) {
     const { rows } = await sql`
       SELECT id FROM users WHERE username = ${username} AND id != ${userId}`;
     return rows.length > 0;
 }
 
+// Xóa người dùng theo id.
 export async function deleteUserById(userId) {
     await sql`DELETE FROM users WHERE id = ${userId}`;
 }
 
+// Đếm số người theo dõi.
 export async function countFollowers(userId) {
     const { rows } =
         await sql`SELECT COUNT(*) as count FROM follows WHERE following_id = ${userId}`;
     return Number(rows[0]?.count || 0);
 }
 
+// Đếm số người đang theo dõi.
 export async function countFollowing(userId) {
     const { rows } =
         await sql`SELECT COUNT(*) as count FROM follows WHERE follower_id = ${userId}`;
     return Number(rows[0]?.count || 0);
 }
 
+// Đếm số bài viết.
 export async function countPosts(userId) {
     const { rows } =
         await sql`SELECT COUNT(*) as count FROM posts WHERE author_id = ${userId}`;
     return Number(rows[0]?.count || 0);
 }
 
+// Lấy bài viết của một người dùng.
 export async function selectUserPosts(userId, cursor, limit) {
     let query;
     if (cursor) {
@@ -76,6 +84,7 @@ export async function selectUserPosts(userId, cursor, limit) {
     return { rows: rows.slice(0, limit), hasMore: rows.length > limit };
 }
 
+// Lấy map chủ đề của bài viết người dùng.
 export async function selectPostTopicsMap() {
     const { rows: postTopics } = await sql`
       SELECT pt.post_id, t.id, t.name, t.description
@@ -93,6 +102,7 @@ export async function selectPostTopicsMap() {
     return topicsMap;
 }
 
+// Tìm người dùng theo từ khóa.
 export async function searchUsers(q) {
     const { rows } = await sql`
     SELECT id, username, email, avatar_url, created_at FROM users
@@ -101,11 +111,13 @@ export async function searchUsers(q) {
     return rows;
 }
 
+// Lấy bản ghi người dùng hiện tại.
 export async function selectCurrentUser(userId) {
     const { rows } = await sql`SELECT * FROM users WHERE id = ${userId}`;
     return rows[0] || null;
 }
 
+// Cập nhật mật khẩu đã mã hóa.
 export async function updatePassword(userId, hashedPassword) {
     await sql`UPDATE users SET hashed_password = ${hashedPassword} WHERE id = ${userId}`;
 }

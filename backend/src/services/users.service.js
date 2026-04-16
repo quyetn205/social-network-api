@@ -15,7 +15,9 @@ import {
     updatePassword,
     usernameTaken
 } from '../repositories/users.repository.js';
+import { selectFollowingIds } from '../repositories/posts.repository.js';
 
+// Lấy thông tin người dùng hiện tại.
 export async function GET_users_me(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
@@ -30,6 +32,7 @@ export async function GET_users_me(req, res) {
     });
 }
 
+// Cập nhật hồ sơ của người dùng hiện tại.
 export async function PUT_update_me(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
@@ -61,6 +64,7 @@ export async function PUT_update_me(req, res) {
     return ok(res, updated);
 }
 
+// Xóa tài khoản hiện tại.
 export async function DELETE_delete_me(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
@@ -68,12 +72,14 @@ export async function DELETE_delete_me(req, res) {
     return ok(res, { success: true });
 }
 
+// Lấy người dùng theo id.
 export async function GET_user_by_id(req, res, id) {
     const user = await selectPublicUserById(id);
     if (!user) return err(res, 404, 'User not found');
     return ok(res, user);
 }
 
+// Lấy hồ sơ công khai của người dùng.
 export async function GET_user_profile(req, res, id) {
     const user = await selectPublicUserById(id);
     if (!user) return err(res, 404, 'User not found');
@@ -92,11 +98,22 @@ export async function GET_user_profile(req, res, id) {
     });
 }
 
+// Lấy bài viết của người dùng.
 export async function GET_user_posts(req, res, userId) {
-    await getUserFromToken(req);
+    const viewer = await getUserFromToken(req);
+    if (!viewer) return err(res, 401, 'Could not validate credentials');
 
     const user = await selectPublicUserById(userId);
     if (!user) return err(res, 404, 'User not found');
+
+    const viewerFollowingIds =
+        Number(viewer.id) === Number(userId)
+            ? []
+            : await selectFollowingIds(viewer.id);
+    const authorFollowingIds =
+        Number(viewer.id) === Number(userId)
+            ? []
+            : await selectFollowingIds(userId);
 
     const cursor = req.query.cursor;
     const limit = parseInt(req.query.limit || '20', 10);
@@ -107,25 +124,45 @@ export async function GET_user_posts(req, res, userId) {
         limit
     );
     const topicsMap = await selectPostTopicsMap();
-    const items = userPosts.map((post) => ({
-        id: post.id,
-        content: post.content,
-        author_id: post.author_id,
-        created_at: post.created_at,
-        updated_at: post.updated_at,
-        likes_count: post.likes_count,
-        comments_count: post.comments_count,
-        topics: topicsMap[post.id] || [],
-        author: {
-            id: post['author.id'],
-            username: post['author.username'],
-            email: post['author.email'],
-            avatar_url: post['author.avatar_url'],
-            date_of_birth: post['author.date_of_birth'],
-            is_admin: post['author.is_admin'],
-            created_at: post['author.created_at']
-        }
-    }));
+    const items = userPosts
+        .filter((post) => {
+            const visibility = (post.visibility || 'public').toLowerCase();
+            if (
+                Number(viewer.id) === Number(userId) ||
+                post.author_id === viewer.id
+            ) {
+                return true;
+            }
+            if (visibility === 'public') return true;
+            if (visibility === 'private') return false;
+            if (visibility === 'friend') {
+                return (
+                    viewerFollowingIds.includes(post.author_id) &&
+                    authorFollowingIds.includes(viewer.id)
+                );
+            }
+            return true;
+        })
+        .map((post) => ({
+            id: post.id,
+            content: post.content,
+            visibility: post.visibility || 'public',
+            author_id: post.author_id,
+            created_at: post.created_at,
+            updated_at: post.updated_at,
+            likes_count: post.likes_count,
+            comments_count: post.comments_count,
+            topics: topicsMap[post.id] || [],
+            author: {
+                id: post['author.id'],
+                username: post['author.username'],
+                email: post['author.email'],
+                avatar_url: post['author.avatar_url'],
+                date_of_birth: post['author.date_of_birth'],
+                is_admin: post['author.is_admin'],
+                created_at: post['author.created_at']
+            }
+        }));
 
     return ok(res, {
         items,
@@ -136,6 +173,7 @@ export async function GET_user_posts(req, res, userId) {
     });
 }
 
+// Tìm người dùng.
 export async function GET_search_users(req, res) {
     const me = await getUserFromToken(req);
     if (!me) return err(res, 401, 'Could not validate credentials');
@@ -147,6 +185,7 @@ export async function GET_search_users(req, res) {
     return ok(res, rows);
 }
 
+// Đổi mật khẩu.
 export async function POST_change_password(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');

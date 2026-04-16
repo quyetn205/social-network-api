@@ -14,6 +14,7 @@ import {
 } from '../repositories/notifications.repository.js';
 import { sql } from '../../db.js';
 
+// Chuẩn hóa dữ liệu thông báo.
 function normalizeNotificationData(rawData) {
     let data = {};
 
@@ -39,6 +40,7 @@ function normalizeNotificationData(rawData) {
     };
 }
 
+// Bổ sung dữ liệu người tạo thông báo.
 async function enrichNotifications(rows) {
     const actorIds = [
         ...new Set(
@@ -78,6 +80,7 @@ async function enrichNotifications(rows) {
     });
 }
 
+// Lấy danh sách thông báo.
 export async function GET_notifications(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
@@ -93,6 +96,7 @@ export async function GET_notifications(req, res) {
     return ok(res, { notifications: enrichedRows, next_cursor });
 }
 
+// Mở luồng SSE cho thông báo.
 export async function GET_notifications_stream(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
@@ -124,6 +128,7 @@ export async function GET_notifications_stream(req, res) {
     });
 }
 
+// Đếm thông báo chưa đọc.
 export async function GET_notifications_unread(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
@@ -131,6 +136,7 @@ export async function GET_notifications_unread(req, res) {
     return ok(res, { count });
 }
 
+// Đánh dấu một thông báo đã đọc.
 export async function PUT_notification_read(req, res, notifId) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
@@ -138,6 +144,7 @@ export async function PUT_notification_read(req, res, notifId) {
     return noContent(res);
 }
 
+// Đánh dấu tất cả thông báo đã đọc.
 export async function PUT_notifications_read_all(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');

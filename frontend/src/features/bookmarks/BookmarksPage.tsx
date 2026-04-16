@@ -8,7 +8,9 @@ import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import type { Post } from '../../services/types';
 import Avatar from '../../components/ui/Avatar';
 import TopicBadge from '../../components/ui/TopicBadge';
+import type { PostVisibility } from '../../services/types';
 
+// Tính thời gian đã trôi qua.
 function timeAgo(dateStr: string) {
     const now = Date.now();
     const then = new Date(dateStr).getTime();
@@ -19,12 +21,24 @@ function timeAgo(dateStr: string) {
     return `${Math.floor(diff / 86400)}d trước`;
 }
 
+function visibilityLabel(visibility?: PostVisibility) {
+    switch (visibility) {
+        case 'friend':
+            return 'Bạn bè';
+        case 'private':
+            return 'Chỉ mình tôi';
+        default:
+            return 'Công khai';
+    }
+}
+
 interface PostCardItemProps {
     post: Post;
     onRemove: (postId: number) => void;
     isRemoving: boolean;
 }
 
+// Hiển thị một bài viết đã lưu.
 function PostCardItem({ post, onRemove, isRemoving }: PostCardItemProps) {
     return (
         <div className='bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3'>
@@ -51,6 +65,9 @@ function PostCardItem({ post, onRemove, isRemoving }: PostCardItemProps) {
                         {timeAgo(post.created_at)}
                     </div>
                 </div>
+                <span className='text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 px-2 py-1 rounded-full'>
+                    {visibilityLabel(post.visibility)}
+                </span>
                 <button
                     onClick={() => onRemove(post.id)}
                     disabled={isRemoving}
@@ -107,6 +124,7 @@ function PostCardItem({ post, onRemove, isRemoving }: PostCardItemProps) {
     );
 }
 
+// Hiển thị danh sách bài viết đã lưu.
 export default function BookmarksPage() {
     const { showToast } = useToast();
     const queryClient = useQueryClient();
@@ -127,6 +145,7 @@ export default function BookmarksPage() {
         setHasMore(initialData.next_cursor !== null);
     }, [initialData]);
 
+    // Tải thêm bài viết đã lưu.
     const loadMore = useCallback(async () => {
         if (!hasMore || isLoadingMore || cursor === null) return;
         setIsLoadingMore(true);

@@ -25,6 +25,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Cung cấp trạng thái đăng nhập và hồ sơ người dùng.
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -54,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+    // Đăng nhập và lưu phiên.
     const login = async (username: string, password: string) => {
         const res = await authApi.login(username, password);
         sessionStorage.setItem('access_token', res.access_token);
@@ -65,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem('user', JSON.stringify(me));
     };
 
+    // Đăng xuất khỏi ứng dụng.
     const logout = () => {
         sessionStorage.removeItem('access_token');
         sessionStorage.removeItem('refresh_token');
@@ -74,11 +77,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         window.location.href = '/login';
     };
 
+    // Cập nhật người dùng trong bộ nhớ.
     const updateUser = (nextUser: User) => {
         setUser(nextUser);
         sessionStorage.setItem('user', JSON.stringify(nextUser));
     };
 
+    // Đăng ký tài khoản mới.
     const register = async (data: {
         username: string;
         email: string;
@@ -107,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 }
 
+// Lấy context đăng nhập hiện tại.
 export function useAuth() {
     const ctx = useContext(AuthContext);
     if (!ctx) throw new Error('useAuth must be used within AuthProvider');

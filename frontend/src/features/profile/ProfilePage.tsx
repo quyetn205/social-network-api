@@ -15,6 +15,7 @@ import { useToast } from '../../context/ToastContext';
 
 type Tab = 'posts' | 'followers' | 'following';
 
+// Hiển thị một người trong danh sách theo dõi.
 function FollowUserCard({ user }: { user: User }) {
     const { data: latestUser } = useQuery({
         queryKey: ['user', user.id],
@@ -47,6 +48,7 @@ function FollowUserCard({ user }: { user: User }) {
     );
 }
 
+// Hiển thị trang hồ sơ người dùng.
 export default function ProfilePage() {
     const { userId } = useParams<{ userId: string }>();
     const { user: currentUser } = useAuth();

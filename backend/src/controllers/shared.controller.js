@@ -8,6 +8,7 @@ const EXPIRE_MINUTES = parseInt(
     10
 );
 
+// Tạo token đăng nhập.
 export function signToken(userId, type = 'access') {
     const expiresIn = type === 'refresh' ? '7d' : `${EXPIRE_MINUTES}m`;
     return jwt.sign({ sub: userId, type }, SECRET, {
@@ -16,6 +17,7 @@ export function signToken(userId, type = 'access') {
     });
 }
 
+// Xác thực token.
 export function verifyToken(token) {
     try {
         return jwt.verify(token, SECRET, { algorithms: [ALGORITHM] });
@@ -24,6 +26,7 @@ export function verifyToken(token) {
     }
 }
 
+// Lấy người dùng hiện tại từ token.
 export async function getUserFromToken(req) {
     const auth = req.headers.authorization;
     const tokenFromQuery = req.query?.access_token;
@@ -36,22 +39,27 @@ export async function getUserFromToken(req) {
     return rows[0] || null;
 }
 
+// Trả phản hồi thành công.
 export function ok(res, data) {
     res.json(data);
 }
 
+// Trả phản hồi tạo mới.
 export function created(res, data) {
     res.status(201).json(data);
 }
 
+// Trả phản hồi không nội dung.
 export function noContent(res) {
     res.sendStatus(204);
 }
 
+// Trả phản hồi lỗi.
 export function err(res, status, msg) {
     res.status(status).json({ detail: msg });
 }
 
+// Trả phản hồi khi bị giới hạn.
 export function rateLimitResponse(res, retryAfter) {
     res.status(429)
         .set('Retry-After', String(retryAfter))
@@ -60,6 +68,7 @@ export function rateLimitResponse(res, retryAfter) {
 
 export const notificationClients = new Map();
 
+// Gửi một sự kiện SSE.
 function writeSseEvent(res, event, data) {
     if (event) res.write(`event: ${event}\n`);
     if (data !== undefined) {
@@ -71,6 +80,7 @@ function writeSseEvent(res, event, data) {
     res.write('\n');
 }
 
+// Phát thông báo tới các client đang nghe.
 function broadcastNotification(userId, notification) {
     const clients = notificationClients.get(Number(userId));
     if (!clients || clients.size === 0) return;
@@ -80,6 +90,7 @@ function broadcastNotification(userId, notification) {
     }
 }
 
+// Tạo và phát thông báo mới.
 export async function createNotification(userId, type, data, actorAvatarUrl) {
     const { rows } = await sql`
       INSERT INTO notifications (user_id, type, data, actor_avatar_url)

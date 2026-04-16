@@ -8,6 +8,7 @@ import { PostCardSkeleton } from '../../components/ui/Skeleton';
 
 const LIMIT = 20;
 
+// Hiển thị bảng tin chính.
 export default function FeedPage() {
     const loadMoreRef = useRef<HTMLDivElement>(null);
     const {

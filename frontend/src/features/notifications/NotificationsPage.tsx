@@ -11,6 +11,7 @@ import Avatar from '../../components/ui/Avatar';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { usersApi } from '../../services/users';
 
+// Tính thời gian đã trôi qua.
 function timeAgo(dateStr: string) {
     const now = Date.now();
     const then = new Date(dateStr).getTime();
@@ -21,6 +22,7 @@ function timeAgo(dateStr: string) {
     return `${Math.floor(diff / 86400)}d trước`;
 }
 
+// Chọn biểu tượng cho thông báo.
 function getNotificationIcon(type: Notification['type']) {
     switch (type) {
         case 'like':
@@ -36,6 +38,7 @@ function getNotificationIcon(type: Notification['type']) {
     }
 }
 
+// Tạo nội dung hiển thị của thông báo.
 function getNotificationText(n: Notification, actorName?: string) {
     const actor = n.data.actor_username || actorName || 'Ai đó';
     switch (n.type) {
@@ -52,6 +55,7 @@ function getNotificationText(n: Notification, actorName?: string) {
     }
 }
 
+// Lấy đường dẫn điều hướng của thông báo.
 function getNotificationLink(n: Notification): string {
     const postId = n.data.post_id ?? (n.data as { postId?: number }).postId;
     const actorId = n.data.actor_id ?? (n.data as { actorId?: number }).actorId;
@@ -66,6 +70,7 @@ interface NotificationItemProps {
     onMarkRead: (id: number) => void;
 }
 
+// Hiển thị một thông báo.
 function NotificationItem({
     notification: n,
     onMarkRead
@@ -147,6 +152,7 @@ function NotificationItem({
     );
 }
 
+// Hiển thị danh sách thông báo.
 export default function NotificationsPage() {
     const { showToast } = useToast();
     const queryClient = useQueryClient();
@@ -204,6 +210,7 @@ export default function NotificationsPage() {
         };
     }, []);
 
+    // Tải thêm thông báo.
     const loadMore = useCallback(async () => {
         if (!hasMore || isLoadingMore || cursor === null) return;
         setIsLoadingMore(true);

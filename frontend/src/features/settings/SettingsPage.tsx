@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useTheme } from '../../context/ThemeContext';
 
+// Hiển thị trang cài đặt tài khoản.
 export default function SettingsPage() {
     const { user, logout, updateUser } = useAuth();
     const { showToast } = useToast();
@@ -47,6 +48,7 @@ export default function SettingsPage() {
         };
     }, [avatarPreview]);
 
+    // Chọn file ảnh đại diện mới.
     const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0] || null;
         if (avatarPreview.startsWith('blob:')) {

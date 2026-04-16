@@ -7,6 +7,7 @@ interface CommentItemProps {
     onReply: (parentId: number, content: string) => void;
 }
 
+// Tính thời gian đã trôi qua.
 function timeAgo(dateStr: string) {
     const now = Date.now();
     const then = new Date(dateStr).getTime();
@@ -17,10 +18,12 @@ function timeAgo(dateStr: string) {
     return `${Math.floor(diff / 86400)}d`;
 }
 
+// Hiển thị một bình luận.
 export default function CommentItem({ comment, onReply }: CommentItemProps) {
     const [showReply, setShowReply] = useState(false);
     const [replyContent, setReplyContent] = useState('');
 
+    // Gửi nội dung phản hồi.
     const handleReply = () => {
         if (replyContent.trim()) {
             onReply(comment.id, replyContent);

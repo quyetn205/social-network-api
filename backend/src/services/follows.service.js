@@ -13,6 +13,7 @@ import {
     selectUserExists
 } from '../repositories/follows.repository.js';
 
+// Xử lý follow người dùng.
 export async function POST_follow(req, res, userId) {
     const me = await getUserFromToken(req);
     if (!me) return err(res, 401, 'Could not validate credentials');
@@ -45,6 +46,7 @@ export async function POST_follow(req, res, userId) {
     }
 }
 
+// Xử lý bỏ follow.
 export async function DELETE_unfollow(req, res, userId) {
     const me = await getUserFromToken(req);
     if (!me) return err(res, 401, 'Could not validate credentials');
@@ -59,6 +61,7 @@ export async function DELETE_unfollow(req, res, userId) {
     return ok(res, { following: false });
 }
 
+// Lấy danh sách người theo dõi.
 export async function GET_followers(req, res, userId) {
     await getUserFromToken(req);
     const cursor = req.query.cursor;
@@ -83,6 +86,7 @@ export async function GET_followers(req, res, userId) {
     return ok(res, { items, next_cursor });
 }
 
+// Lấy danh sách đang theo dõi.
 export async function GET_following(req, res, userId) {
     await getUserFromToken(req);
     const cursor = req.query.cursor;
@@ -107,6 +111,7 @@ export async function GET_following(req, res, userId) {
     return ok(res, { items, next_cursor });
 }
 
+// Kiểm tra trạng thái follow.
 export async function GET_follow_status(req, res, userId) {
     const me = await getUserFromToken(req);
     if (!me) return err(res, 401, 'Could not validate credentials');

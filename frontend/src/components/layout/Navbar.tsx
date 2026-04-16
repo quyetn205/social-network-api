@@ -7,6 +7,7 @@ import Avatar from '../ui/Avatar';
 import NotificationBell from '../ui/NotificationBell';
 import { useQueryClient } from '@tanstack/react-query'
 
+// Hiển thị thanh điều hướng trên cùng.
 export default function Navbar() {
     const { user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
@@ -51,6 +52,7 @@ export default function Navbar() {
             document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Tìm người dùng theo tên.
     const handleSearch = (value: string) => {
         setQuery(value);
         if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -70,6 +72,7 @@ export default function Navbar() {
         }, 300);
     };
 
+    // Đi tới trang hồ sơ của kết quả.
     const handleResultClick = (userId: number) => {
         setQuery('');
         setResults([]);

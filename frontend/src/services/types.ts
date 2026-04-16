@@ -22,10 +22,13 @@ export interface Topic {
     description: string | null;
 }
 
+export type PostVisibility = 'public' | 'friend' | 'private';
+
 export interface Post {
     id: number;
     content: string;
     image_url?: string | null;
+    visibility?: PostVisibility;
     author_id: number;
     created_at: string;
     updated_at: string;

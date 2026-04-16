@@ -16,6 +16,7 @@ import {
 
 const loginLimits = new Map();
 
+// Kiểm tra giới hạn đăng nhập theo IP.
 function checkLoginLimit(ip) {
     const now = Date.now();
     const record = loginLimits.get(ip) || {
@@ -37,6 +38,7 @@ function checkLoginLimit(ip) {
     return { limited: false };
 }
 
+// Xử lý đăng ký tài khoản.
 export async function POST_auth_register(req, res) {
     const body = req.body;
     const { username, email, password, date_of_birth } = body;
@@ -78,6 +80,7 @@ export async function POST_auth_register(req, res) {
     }
 }
 
+// Xử lý đăng nhập.
 export async function POST_auth_login(req, res) {
     const ip =
         req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
@@ -115,6 +118,7 @@ export async function POST_auth_login(req, res) {
     });
 }
 
+// Làm mới access token.
 export async function POST_auth_refresh(req, res) {
     const body = req.body;
     const { refresh_token } = body;

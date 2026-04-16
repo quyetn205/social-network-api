@@ -7,6 +7,7 @@ import {
     selectTopicsMap
 } from '../repositories/bookmarks.repository.js';
 
+// Chuyển hàng bookmark thành payload trả về.
 function mapBookmarkPost(post, topicsMap) {
     return {
         id: post.id,
@@ -30,6 +31,7 @@ function mapBookmarkPost(post, topicsMap) {
     };
 }
 
+// Lấy danh sách bài đã lưu.
 export async function listBookmarksForUser(userId, cursor, limit) {
     const { rows, hasMore } = await selectBookmarkedPosts(
         userId,
@@ -45,10 +47,12 @@ export async function listBookmarksForUser(userId, cursor, limit) {
     return { posts, next_cursor };
 }
 
+// Kiểm tra trạng thái đã lưu.
 export async function getBookmarkStatusForUser(userId, postId) {
     return await selectBookmarkStatus(userId, postId);
 }
 
+// Lưu bài viết cho người dùng.
 export async function createBookmarkForUser(userId, postId) {
     const exists = await selectPostExists(postId);
     if (!exists) return { found: false };
@@ -61,6 +65,7 @@ export async function createBookmarkForUser(userId, postId) {
     }
 }
 
+// Bỏ lưu bài viết.
 export async function removeBookmarkForUser(userId, postId) {
     const removed = await deleteBookmark(userId, postId);
     return { bookmarked: false, removed };

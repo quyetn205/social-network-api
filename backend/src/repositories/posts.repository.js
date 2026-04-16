@@ -154,10 +154,15 @@ export async function selectPostAuthor(postId) {
     return rows[0] || null;
 }
 
-export async function insertPost(content, authorId, imageUrl = null) {
+export async function insertPost(
+    content,
+    authorId,
+    imageUrl = null,
+    visibility = 'public'
+) {
     const { rows } = await sql`
-    INSERT INTO posts (content, image_url, author_id)
-    VALUES (${content}, ${imageUrl}, ${authorId})
+    INSERT INTO posts (content, image_url, author_id, visibility)
+    VALUES (${content}, ${imageUrl}, ${authorId}, ${visibility})
     RETURNING *`;
     return rows[0];
 }
@@ -185,11 +190,12 @@ export async function updatePostContent(postId, content) {
     return rows[0] || null;
 }
 
-export async function updatePostDetails(postId, content, imageUrl) {
+export async function updatePostDetails(postId, content, imageUrl, visibility) {
     const { rows } = await sql`
         UPDATE posts SET
             content = COALESCE(${content}, content),
             image_url = ${imageUrl},
+            visibility = COALESCE(${visibility}, visibility),
             updated_at = NOW()
         WHERE id = ${postId}
         RETURNING *`;
