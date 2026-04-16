@@ -154,10 +154,10 @@ export async function selectPostAuthor(postId) {
     return rows[0] || null;
 }
 
-export async function insertPost(content, authorId) {
+export async function insertPost(content, authorId, imageUrl = null) {
     const { rows } = await sql`
-    INSERT INTO posts (content, author_id)
-    VALUES (${content}, ${authorId})
+    INSERT INTO posts (content, image_url, author_id)
+    VALUES (${content}, ${imageUrl}, ${authorId})
     RETURNING *`;
     return rows[0];
 }
@@ -182,6 +182,17 @@ export async function updatePostContent(postId, content) {
       updated_at = NOW()
     WHERE id = ${postId}
     RETURNING *`;
+    return rows[0] || null;
+}
+
+export async function updatePostDetails(postId, content, imageUrl) {
+    const { rows } = await sql`
+        UPDATE posts SET
+            content = COALESCE(${content}, content),
+            image_url = ${imageUrl},
+            updated_at = NOW()
+        WHERE id = ${postId}
+        RETURNING *`;
     return rows[0] || null;
 }
 

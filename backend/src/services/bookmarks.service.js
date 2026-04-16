@@ -11,6 +11,7 @@ function mapBookmarkPost(post, topicsMap) {
     return {
         id: post.id,
         content: post.content,
+        image_url: post.image_url || null,
         author_id: post.author_id,
         created_at: post.created_at,
         updated_at: post.updated_at,

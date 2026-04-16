@@ -188,6 +188,17 @@ export default function PostDetailPage() {
                     {post.content}
                 </p>
 
+                {post.image_url && (
+                    <div className='overflow-hidden rounded-xl border border-gray-100 dark:border-dark-border bg-gray-50 dark:bg-dark-bg'>
+                        <img
+                            src={post.image_url}
+                            alt={post.content || 'Ảnh bài viết'}
+                            className='max-h-[40rem] w-full object-cover'
+                            loading='lazy'
+                        />
+                    </div>
+                )}
+
                 {post.topics.length > 0 && (
                     <div className='flex flex-wrap gap-1.5'>
                         {post.topics.map(

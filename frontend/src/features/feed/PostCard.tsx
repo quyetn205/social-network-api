@@ -72,6 +72,11 @@ export default function PostCard({ post }: PostCardProps) {
     const [editTopics, setEditTopics] = useState<number[]>(
         post.topics.map((t: Topic) => t.id)
     );
+    const [editImageFile, setEditImageFile] = useState<File | null>(null);
+    const [editImagePreview, setEditImagePreview] = useState<string | null>(
+        post.image_url || null
+    );
+    const [removeEditImage, setRemoveEditImage] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
 
     const isOwner = user?.id === post.author_id;
@@ -104,11 +109,21 @@ export default function PostCard({ post }: PostCardProps) {
     });
 
     const editMutation = useMutation({
-        mutationFn: () => postsApi.updatePost(post.id, editContent, editTopics),
+        mutationFn: () =>
+            postsApi.updatePost(
+                post.id,
+                editContent,
+                editTopics,
+                editImageFile,
+                removeEditImage
+            ),
         onSuccess: (updated) => {
             queryClient.invalidateQueries({ queryKey: ['feed'] });
             queryClient.setQueryData(['post', String(post.id)], updated);
             setEditing(false);
+            setEditImageFile(null);
+            setRemoveEditImage(false);
+            setEditImagePreview(updated.image_url || null);
             showToast('Đã cập nhật bài viết', 'success');
         },
         onError: () => {
@@ -162,9 +177,55 @@ export default function PostCard({ post }: PostCardProps) {
                     rows={4}
                 />
                 <TopicSelector selected={editTopics} onChange={setEditTopics} />
+                {editImagePreview && (
+                    <div className='overflow-hidden rounded-lg border border-gray-200 dark:border-dark-border bg-gray-50 dark:bg-dark-bg'>
+                        <img
+                            src={editImagePreview}
+                            alt='Ảnh bài viết'
+                            className='max-h-80 w-full object-cover'
+                        />
+                    </div>
+                )}
+                <div className='flex items-center gap-3'>
+                    <label className='inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 dark:border-dark-border px-3 py-2 text-sm text-gray-700 dark:text-dark-text hover:bg-gray-50 dark:hover:bg-dark-bg'>
+                        <input
+                            type='file'
+                            accept='image/*'
+                            className='hidden'
+                            onChange={(e) => {
+                                const file = e.target.files?.[0] ?? null;
+                                if (!file) return;
+                                setEditImageFile(file);
+                                setRemoveEditImage(false);
+                                setEditImagePreview(URL.createObjectURL(file));
+                            }}
+                        />
+                        <span>🖼️</span>
+                        <span>{editImagePreview ? 'Đổi ảnh' : 'Thêm ảnh'}</span>
+                    </label>
+
+                    {editImagePreview && (
+                        <button
+                            type='button'
+                            onClick={() => {
+                                setEditImageFile(null);
+                                setEditImagePreview(null);
+                                setRemoveEditImage(true);
+                            }}
+                            className='text-sm text-red-500 hover:text-red-600'
+                        >
+                            Xóa ảnh
+                        </button>
+                    )}
+                </div>
                 <div className='flex gap-2 justify-end'>
                     <button
-                        onClick={() => setEditing(false)}
+                        onClick={() => {
+                            setEditing(false);
+                            setEditImageFile(null);
+                            setRemoveEditImage(false);
+                            setEditImagePreview(post.image_url || null);
+                        }}
                         className='px-4 py-2 rounded-lg text-sm text-gray-600 dark:text-dark-muted hover:bg-gray-100 dark:hover:bg-dark-border'
                     >
                         Hủy
@@ -255,6 +316,16 @@ export default function PostCard({ post }: PostCardProps) {
 
             {/* Content */}
             <Link to={`/posts/${post.id}`} className='block'>
+                {post.image_url && (
+                    <div className='mb-3 overflow-hidden rounded-xl border border-gray-100 dark:border-dark-border bg-gray-50 dark:bg-dark-bg'>
+                        <img
+                            src={post.image_url}
+                            alt={post.content || 'Ảnh bài viết'}
+                            className='max-h-[32rem] w-full object-cover'
+                            loading='lazy'
+                        />
+                    </div>
+                )}
                 <p className='text-gray-800 dark:text-dark-text whitespace-pre-wrap break-words'>
                     {post.content}
                 </p>

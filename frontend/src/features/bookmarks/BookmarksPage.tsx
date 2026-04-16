@@ -60,9 +60,21 @@ function PostCardItem({ post, onRemove, isRemoving }: PostCardItemProps) {
 
             {/* Content */}
             <Link to={`/posts/${post.id}`} className='block'>
-                <p className='text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words'>
-                    {post.content}
-                </p>
+                {post.image_url && (
+                    <div className='mb-3 overflow-hidden rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'>
+                        <img
+                            src={post.image_url}
+                            alt={post.content || 'ảnh bài viết'}
+                            className='max-h-[32rem] w-full object-cover'
+                            loading='lazy'
+                        />
+                    </div>
+                )}
+                {post.content && (
+                    <p className='text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words'>
+                        {post.content}
+                    </p>
+                )}
             </Link>
 
             {/* Topics */}
