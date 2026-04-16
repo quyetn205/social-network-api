@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect} from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { postsApi } from '../../services/posts'
@@ -47,12 +47,22 @@ export default function SearchPage() {
 
   // ── Posts search ──
   const {
+    data: initialPostsData,
     isLoading: isLoadingPostsInitial,
   } = useQuery({
     queryKey: ['search', 'posts', debouncedQuery, 0],
     queryFn: () => postsApi.searchPosts(debouncedQuery, undefined, 20),
     enabled: debouncedQuery.length > 0 && postCursor === null,
   })
+
+  // Đổ dữ liệu ban đầu vào state posts
+  useEffect(() => {
+    if (initialPostsData) {
+      setPosts(initialPostsData.items);
+      setPostCursor(initialPostsData.next_cursor);
+      setHasMorePosts(initialPostsData.next_cursor !== null);
+    }
+  }, [initialPostsData])
 
   // Load more posts
   const loadMorePosts = useCallback(async () => {
