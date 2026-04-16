@@ -6,13 +6,14 @@ import {
     selectPostExists,
     selectTopicsMap
 } from '../repositories/bookmarks.repository.js';
+import { resolvePublicUploadUrl } from '../middleware/upload.js';
 
 // Chuyển hàng bookmark thành payload trả về.
-function mapBookmarkPost(post, topicsMap) {
+function mapBookmarkPost(req, post, topicsMap) {
     return {
         id: post.id,
         content: post.content,
-        image_url: post.image_url || null,
+        image_url: resolvePublicUploadUrl(req, post.image_url || null),
         author_id: post.author_id,
         created_at: post.created_at,
         updated_at: post.updated_at,
@@ -23,7 +24,7 @@ function mapBookmarkPost(post, topicsMap) {
             id: post['author.id'],
             username: post['author.username'],
             email: post['author.email'],
-            avatar_url: post['author.avatar_url'],
+            avatar_url: resolvePublicUploadUrl(req, post['author.avatar_url']),
             date_of_birth: post['author.date_of_birth'],
             is_admin: post['author.is_admin'],
             created_at: post['author.created_at']
@@ -39,7 +40,7 @@ export async function listBookmarksForUser(userId, cursor, limit) {
         limit
     );
     const topicsMap = await selectTopicsMap();
-    const posts = rows.map((post) => mapBookmarkPost(post, topicsMap));
+    const posts = rows.map((post) => mapBookmarkPost(req, post, topicsMap));
     const next_cursor =
         hasMore && posts.length > 0
             ? String(rows[rows.length - 1].bookmarked_at)

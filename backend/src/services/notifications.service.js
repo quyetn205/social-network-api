@@ -13,6 +13,7 @@ import {
     selectNotifications
 } from '../repositories/notifications.repository.js';
 import { sql } from '../../db.js';
+import { resolvePublicUploadUrl } from '../middleware/upload.js';
 
 // Chuẩn hóa dữ liệu thông báo.
 function normalizeNotificationData(rawData) {
@@ -41,7 +42,7 @@ function normalizeNotificationData(rawData) {
 }
 
 // Bổ sung dữ liệu người tạo thông báo.
-async function enrichNotifications(rows) {
+async function enrichNotifications(req, rows) {
     const actorIds = [
         ...new Set(
             rows
@@ -75,7 +76,10 @@ async function enrichNotifications(rows) {
                 comment_id: normalizedData.comment_id,
                 message: normalizedData.message
             },
-            actor_avatar_url: row.actor_avatar_url || actor?.avatar_url || ''
+            actor_avatar_url: resolvePublicUploadUrl(
+                req,
+                row.actor_avatar_url || actor?.avatar_url || ''
+            )
         };
     });
 }
@@ -88,7 +92,7 @@ export async function GET_notifications(req, res) {
     const cursor = req.query.cursor;
     const limit = parseInt(req.query.limit || '20', 10);
     const { rows, hasMore } = await selectNotifications(user.id, cursor, limit);
-    const enrichedRows = await enrichNotifications(rows);
+    const enrichedRows = await enrichNotifications(req, rows);
     const next_cursor =
         hasMore && enrichedRows.length > 0
             ? String(enrichedRows[enrichedRows.length - 1].id)

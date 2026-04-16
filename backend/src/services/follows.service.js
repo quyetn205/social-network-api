@@ -6,6 +6,10 @@ import {
     ok
 } from '../controllers/shared.controller.js';
 import {
+    extractStoredUploadName,
+    resolvePublicUploadUrl
+} from '../middleware/upload.js';
+import {
     deleteFollow,
     selectFriendStatus,
     insertFollow,
@@ -38,7 +42,7 @@ export async function POST_follow(req, res, userId) {
                 actor_id: me.id,
                 actor_username: me.username
             },
-            me.avatar_url
+            extractStoredUploadName(me.avatar_url)
         );
         return created(res, { following: true });
     } catch (error) {
@@ -83,7 +87,7 @@ export async function GET_followers(req, res, userId) {
                 id: r.id,
                 username: r.username,
                 email: r.email,
-                avatar_url: r.avatar_url,
+                avatar_url: resolvePublicUploadUrl(req, r.avatar_url),
                 created_at: r.created_at,
                 friend
             };
@@ -117,7 +121,7 @@ export async function GET_following(req, res, userId) {
                 id: r.id,
                 username: r.username,
                 email: r.email,
-                avatar_url: r.avatar_url,
+                avatar_url: resolvePublicUploadUrl(req, r.avatar_url),
                 created_at: r.created_at,
                 friend
             };
