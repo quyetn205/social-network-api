@@ -14,6 +14,7 @@ import SettingsPage from './features/settings/SettingsPage'
 import NotificationsPage from './features/notifications/NotificationsPage'
 import BookmarksPage from './features/bookmarks/BookmarksPage'
 import SearchPage from './features/search/SearchPage'
+import WeatherPage from './features/weather/WeatherPage'
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
               <Route path="/" element={<Navigate to="/feed" replace />} />
               <Route path="/feed" element={<FeedPage />} />
               <Route path="/explore" element={<ExplorePage />} />
+              <Route path="/weather" element={<WeatherPage />} />
               <Route path="/posts/:postId" element={<PostDetailPage />} />
               <Route path="/profile/:userId" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />

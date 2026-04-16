@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 const items = [
   { to: '/feed', icon: '📰', label: 'Bảng tin' },
   { to: '/explore', icon: '🔍', label: 'Khám phá' },
+  { to: '/weather', icon: '⛅️', label: 'Thời tiết' },
   { to: '/search', icon: '🔎', label: 'Tìm kiếm' },
   { to: '/notifications', icon: '🔔', label: 'Thông báo' },
 ]
