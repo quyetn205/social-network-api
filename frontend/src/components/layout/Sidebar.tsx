@@ -7,7 +7,6 @@ import Avatar from '../ui/Avatar';
 const navItems = [
     { to: '/feed', label: 'Bảng tin', icon: '📰' },
     { to: '/explore', label: 'Khám phá', icon: '🔍' },
-    { to: '/weather', label: 'Thời tiết', icon: '⛅️' },
     { to: '/notifications', label: 'Thông báo', icon: '🔔' },
     { to: '/bookmarks', label: 'Đã lưu', icon: '💾' },
     { to: '/search', label: 'Tìm kiếm', icon: '🔎' }
