@@ -32,6 +32,7 @@ INSERT INTO topics (name, description) VALUES
 CREATE TABLE IF NOT EXISTS posts (
   id SERIAL PRIMARY KEY,
   content TEXT NOT NULL,
+  image_url TEXT DEFAULT NULL,
   author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

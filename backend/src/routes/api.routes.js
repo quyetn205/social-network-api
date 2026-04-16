@@ -1,4 +1,5 @@
 import express from 'express';
+import { uploadPostImage } from '../middleware/upload.js';
 import {
     DELETE_delete_me,
     DELETE_delete_post,
@@ -94,7 +95,7 @@ router.get('/api/v1/bookmarks/posts/:id/status', (req, res) =>
 router.post('/api/v1/auth/login', POST_auth_login);
 router.post('/api/v1/auth/register', POST_auth_register);
 router.post('/api/v1/auth/refresh', POST_auth_refresh);
-router.post('/api/v1/posts/', POST_create_post);
+router.post('/api/v1/posts/', uploadPostImage, POST_create_post);
 router.post('/api/v1/posts/:id/comments/', (req, res) =>
     POST_create_comment(req, res, req.params.id)
 );
@@ -110,7 +111,7 @@ router.post('/api/v1/bookmarks/posts/:id/', (req, res) =>
 );
 
 // PUT routes
-router.put('/api/v1/posts/:id', (req, res) =>
+router.put('/api/v1/posts/:id', uploadPostImage, (req, res) =>
     PUT_update_post(req, res, req.params.id)
 );
 router.put('/api/v1/users/me', PUT_update_me);

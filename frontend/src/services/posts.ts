@@ -31,24 +31,40 @@ export const postsApi = {
 
     createPost: async (
         content: string,
-        topicIds: number[] = []
+        topicIds: number[] = [],
+        imageFile?: File | null
     ): Promise<Post> => {
-        const res = await api.post<Post>('/posts/', {
-            content,
-            topic_ids: topicIds
-        });
+        const formData = new FormData();
+        formData.append('content', content);
+        formData.append('topic_ids', JSON.stringify(topicIds));
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+
+        const res = await api.post<Post>('/posts/', formData);
         return res.data;
     },
 
     updatePost: async (
         postId: number,
         content: string,
-        topicIds?: number[]
+        topicIds?: number[],
+        imageFile?: File | null,
+        removeImage = false
     ): Promise<Post> => {
-        const res = await api.put<Post>(`/posts/${postId}`, {
-            content,
-            topic_ids: topicIds
-        });
+        const formData = new FormData();
+        formData.append('content', content);
+        if (topicIds !== undefined) {
+            formData.append('topic_ids', JSON.stringify(topicIds));
+        }
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+        if (removeImage) {
+            formData.append('remove_image', 'true');
+        }
+
+        const res = await api.put<Post>(`/posts/${postId}`, formData);
         return res.data;
     },
 

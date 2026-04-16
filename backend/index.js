@@ -1,13 +1,22 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { mkdirSync } from 'fs';
+import { fileURLToPath } from 'url';
 import { initDb } from './db.js';
 import apiRouter from './src/routes/api.routes.js';
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.join(__dirname, 'uploads');
+
+mkdirSync(uploadsDir, { recursive: true });
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(uploadsDir));
 app.use(apiRouter);
 
 // Error handler

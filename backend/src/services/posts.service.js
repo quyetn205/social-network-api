@@ -7,6 +7,11 @@ import {
     ok
 } from '../controllers/shared.controller.js';
 import {
+    buildPublicUploadUrl,
+    deleteUploadedImageUrl,
+    deleteUploadedFile
+} from '../middleware/upload.js';
+import {
     decrementLikesCount,
     deleteLike,
     deletePost,
@@ -28,13 +33,15 @@ import {
     selectPreferenceTopicIds,
     selectSearchPosts,
     selectTopicsMap,
-    updatePostContent
+    updatePostContent,
+    updatePostDetails
 } from '../repositories/posts.repository.js';
 
 function mapPost(post, topicsMap, extra = {}) {
     return {
         id: post.id,
         content: post.content,
+        image_url: post.image_url || null,
         author_id: post.author_id,
         created_at: post.created_at,
         updated_at: post.updated_at,
@@ -69,6 +76,26 @@ function mapComment(comment) {
             created_at: comment['author.created_at']
         }
     };
+}
+
+function parseTopicIds(value) {
+    if (value === undefined || value === null || value === '') return [];
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => Number(item))
+            .filter((item) => Number.isInteger(item));
+    }
+    if (typeof value === 'string') {
+        try {
+            return parseTopicIds(JSON.parse(value));
+        } catch {
+            return value
+                .split(',')
+                .map((item) => Number(item.trim()))
+                .filter((item) => Number.isInteger(item));
+        }
+    }
+    return [];
 }
 
 export async function GET_feed(req, res) {
@@ -149,27 +176,37 @@ export async function POST_create_post(req, res) {
 
     const body = req.body;
     const { content, topic_ids } = body;
+    const normalizedContent = typeof content === 'string' ? content.trim() : '';
+    const normalizedTopicIds = parseTopicIds(topic_ids);
+    const imageUrl = req.file
+        ? buildPublicUploadUrl(req, req.file.filename)
+        : null;
 
-    if (
-        !content ||
-        typeof content !== 'string' ||
-        content.trim().length === 0
-    ) {
-        return err(res, 400, 'Content is required');
+    if (normalizedContent.length === 0 && !imageUrl) {
+        await deleteUploadedFile(req.file?.path);
+        return err(res, 400, 'Content or image is required');
     }
-    if (content.trim().length > 5000) {
+    if (normalizedContent.length > 5000) {
+        await deleteUploadedFile(req.file?.path);
         return err(res, 400, 'Content must not exceed 5000 characters');
     }
 
-    const post = await insertPost(content, user.id);
-    if (topic_ids?.length) {
-        await insertPostTopics(post.id, topic_ids);
+    let post;
+    try {
+        post = await insertPost(normalizedContent, user.id, imageUrl);
+        if (normalizedTopicIds.length) {
+            await insertPostTopics(post.id, normalizedTopicIds);
+        }
+    } catch (error) {
+        await deleteUploadedFile(req.file?.path);
+        throw error;
     }
 
     const topicsRows = await selectPostTopicsForPost(post.id);
     return created(res, {
         id: post.id,
         content: post.content,
+        image_url: post.image_url || null,
         author_id: post.author_id,
         created_at: post.created_at,
         updated_at: post.updated_at,
@@ -199,23 +236,61 @@ export async function PUT_update_post(req, res, postId) {
 
     const body = req.body;
     const { content, topic_ids } = body;
+    const removeImage =
+        String(body.remove_image || '').toLowerCase() === 'true';
+    const normalizedContent =
+        typeof content === 'string' ? content.trim() : undefined;
+    const normalizedTopicIds =
+        topic_ids !== undefined ? parseTopicIds(topic_ids) : undefined;
+
+    const previousImageUrl = existing.image_url || null;
+    const nextImageUrl = req.file
+        ? buildPublicUploadUrl(req, req.file.filename)
+        : removeImage
+          ? null
+          : previousImageUrl;
+    const contentValue =
+        content !== undefined ? (normalizedContent ?? '') : null;
 
     if (
         content !== undefined &&
-        (typeof content !== 'string' || content.trim().length > 5000)
+        (typeof content !== 'string' || normalizedContent.length > 5000)
     ) {
+        await deleteUploadedFile(req.file?.path);
         return err(res, 400, 'Content must not exceed 5000 characters');
     }
 
-    const post = await updatePostContent(postId, content);
-    if (topic_ids !== undefined) {
-        await replacePostTopics(postId, topic_ids);
+    const finalContent =
+        normalizedContent !== undefined ? normalizedContent : existing.content;
+    if (finalContent.length === 0 && !nextImageUrl) {
+        await deleteUploadedFile(req.file?.path);
+        return err(res, 400, 'Content or image is required');
+    }
+
+    let post;
+    try {
+        if (content !== undefined || nextImageUrl !== previousImageUrl) {
+            post = await updatePostDetails(postId, contentValue, nextImageUrl);
+        } else {
+            post = existing;
+        }
+        if (normalizedTopicIds !== undefined) {
+            await replacePostTopics(postId, normalizedTopicIds);
+        }
+    } catch (error) {
+        await deleteUploadedFile(req.file?.path);
+        throw error;
+    }
+
+    if (previousImageUrl && previousImageUrl !== nextImageUrl) {
+        await deleteUploadedImageUrl(previousImageUrl);
     }
 
     const topicsRows = await selectPostTopicsForPost(postId);
     return ok(res, {
         id: post.id,
         content: post.content,
+        image_url: post.image_url || null,
         author_id: post.author_id,
         created_at: post.created_at,
         updated_at: post.updated_at,
@@ -243,6 +318,7 @@ export async function DELETE_delete_post(req, res, postId) {
         return err(res, 403, 'You are not authorized to delete this post');
     }
 
+    await deleteUploadedImageUrl(existing.image_url || null);
     await deletePost(postId);
     return noContent(res);
 }
@@ -257,6 +333,7 @@ export async function GET_post(req, res, id) {
     return ok(res, {
         id: post.id,
         content: post.content,
+        image_url: post.image_url || null,
         author_id: post.author_id,
         created_at: post.created_at,
         updated_at: post.updated_at,
