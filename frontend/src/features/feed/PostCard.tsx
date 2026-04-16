@@ -106,15 +106,7 @@ export default function PostCard({ post }: PostCardProps) {
     const editMutation = useMutation({
         mutationFn: () => postsApi.updatePost(post.id, editContent, editTopics),
         onSuccess: (updated) => {
-            queryClient.setQueryData(
-                ['feed'],
-                (old: PostWithScore[] | undefined) =>
-                    old?.map((p: PostWithScore) =>
-                        p.id === post.id
-                            ? { ...p, ...(updated as PostWithScore) }
-                            : p
-                    )
-            );
+            queryClient.invalidateQueries({ queryKey: ['feed'] });
             queryClient.setQueryData(['post', String(post.id)], updated);
             setEditing(false);
             showToast('Đã cập nhật bài viết', 'success');
@@ -127,11 +119,7 @@ export default function PostCard({ post }: PostCardProps) {
     const deleteMutation = useMutation({
         mutationFn: () => postsApi.deletePost(post.id),
         onSuccess: () => {
-            queryClient.setQueryData(
-                ['feed'],
-                (old: PostWithScore[] | undefined) =>
-                    old?.filter((p) => p.id !== post.id)
-            );
+            queryClient.invalidateQueries({ queryKey: ['feed'] });
             showToast('Đã xóa bài viết', 'success');
         },
         onError: () => {
