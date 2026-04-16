@@ -1,5 +1,5 @@
 import express from 'express';
-import { uploadPostImage } from '../middleware/upload.js';
+import { uploadAvatarImage, uploadPostImage } from '../middleware/upload.js';
 import {
     DELETE_delete_me,
     DELETE_delete_post,
@@ -114,7 +114,7 @@ router.post('/api/v1/bookmarks/posts/:id/', (req, res) =>
 router.put('/api/v1/posts/:id', uploadPostImage, (req, res) =>
     PUT_update_post(req, res, req.params.id)
 );
-router.put('/api/v1/users/me', PUT_update_me);
+router.put('/api/v1/users/me', uploadAvatarImage, PUT_update_me);
 router.put('/api/v1/preferences/users/me/preferences', PUT_update_preferences);
 router.put('/api/v1/notifications/read-all', PUT_notifications_read_all);
 router.put('/api/v1/notifications/:id/read', (req, res) =>
