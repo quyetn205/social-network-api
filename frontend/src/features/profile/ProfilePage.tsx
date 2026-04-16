@@ -162,7 +162,7 @@ export default function ProfilePage() {
                         </p>
                         {user.date_of_birth && (
                             <p className='text-gray-400 dark:text-dark-muted text-xs mt-1'>
-                                Sinh nhật: {user.date_of_birth}
+                                Sinh nhật: {new Date(user.date_of_birth).toLocaleDateString('vi-VN')}
                             </p>
                         )}
                     </div>

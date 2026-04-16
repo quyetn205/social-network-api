@@ -1,15 +1,26 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { usersApi } from '../../services/users'
 import Avatar from '../ui/Avatar'
 import NotificationBell from '../ui/NotificationBell'
+import { useQueryClient } from '@tanstack/react-query'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
+  const location = useLocation()
+  const queryClient = useQueryClient()
+  const handleHomeClick = (e: React.MouseEvent) => {
+    if (location.pathname === '/feed') {
+      e.preventDefault() 
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      queryClient.invalidateQueries({ queryKey: ['feed'] }) 
+    }
+  }
+
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<{ id: number; username: string; email: string }[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
@@ -54,7 +65,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-border transition-colors">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
         {/* Logo */}
-        <Link to="/feed" className="text-xl font-bold text-blue-500 shrink-0">
+        <Link to="/feed" onClick={handleHomeClick} className="text-xl font-bold text-blue-500 shrink-0">
           🌐 SocialNet
         </Link>
 
@@ -89,7 +100,7 @@ export default function Navbar() {
 
         {/* Desktop nav links */}
         <nav className="hidden md:flex items-center gap-1 shrink-0">
-          <Link to="/feed" className="px-3 py-2 rounded-lg text-gray-600 dark:text-dark-muted hover:bg-gray-100 dark:hover:bg-dark-bg text-sm font-medium transition-colors">
+          <Link to="/feed" onClick={handleHomeClick} className="px-3 py-2 rounded-lg text-gray-600 dark:text-dark-muted hover:bg-gray-100 dark:hover:bg-dark-bg text-sm font-medium transition-colors">
             📰
           </Link>
           <Link to="/explore" className="px-3 py-2 rounded-lg text-gray-600 dark:text-dark-muted hover:bg-gray-100 dark:hover:bg-dark-bg text-sm font-medium transition-colors">
