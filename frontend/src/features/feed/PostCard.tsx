@@ -35,6 +35,7 @@ export default function PostCard({ post }: PostCardProps) {
             api
                 .get<LikeStatus>(`/likes/posts/${post.id}/status/`)
                 .then((r) => r.data),
+        enabled: !!user,
         staleTime: 300000
     });
 
@@ -56,10 +57,16 @@ export default function PostCard({ post }: PostCardProps) {
         if (likeStatus) setLiked(likeStatus.liked);
     }, [likeStatus]);
     React.useEffect(() => {
+        if (!user) setLiked(false);
+    }, [user]);
+    React.useEffect(() => {
         if (bookmarkStatus) setBookmarked(bookmarkStatus.bookmarked);
     }, [bookmarkStatus]);
 
     const [likeCount, setLikeCount] = useState(post.likes_count);
+    React.useEffect(() => {
+        setLikeCount(post.likes_count);
+    }, [post.likes_count]);
     const [editing, setEditing] = useState(false);
     const [editContent, setEditContent] = useState(post.content);
     const [editTopics, setEditTopics] = useState<number[]>(
@@ -70,25 +77,28 @@ export default function PostCard({ post }: PostCardProps) {
     const isOwner = user?.id === post.author_id;
 
     const likeMutation = useMutation({
-        mutationFn: () =>
-            liked ? postsApi.unlikePost(post.id) : postsApi.likePost(post.id),
-        onMutate: () => {
-            const prevLiked = liked;
-            const prevCount = likeCount;
-            setLiked(!liked);
-            setLikeCount((c: number) => c + (liked ? -1 : 1));
-            return { prevLiked, prevCount };
-        },
-        onError: (_error, _vars, context) => {
-            if (context) {
-                setLiked(context.prevLiked);
-                setLikeCount(context.prevCount);
+        mutationFn: async () => {
+            const status = await postsApi.getLikeStatus(post.id);
+            if (status.liked) {
+                await postsApi.unlikePost(post.id);
+                return { liked: false, delta: -1 };
             }
+            await postsApi.likePost(post.id);
+            return { liked: true, delta: 1 };
+        },
+        onSuccess: (result) => {
+            setLiked(result.liked);
+            setLikeCount((c: number) => Math.max(0, c + result.delta));
+        },
+        onError: () => {
+            showToast('Không thể thích bài viết', 'error');
         },
         onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ['feed'] });
             queryClient.invalidateQueries({
                 queryKey: ['likeStatus', post.id]
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['post', String(post.id)]
             });
         }
     });
@@ -274,8 +284,12 @@ export default function PostCard({ post }: PostCardProps) {
             {/* Actions */}
             <div className='flex items-center gap-4 pt-1 border-t border-gray-100 dark:border-dark-border'>
                 <button
-                    onClick={() => likeMutation.mutate()}
-                    disabled={likeMutation.isPending}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (user) likeMutation.mutate();
+                    }}
+                    disabled={!user || likeMutation.isPending}
                     className={`flex items-center gap-1.5 text-sm transition-colors ${
                         liked
                             ? 'text-red-500'

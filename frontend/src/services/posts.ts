@@ -113,6 +113,11 @@ export const postsApi = {
         return res.data;
     },
 
+    getLikeStatus: async (postId: number): Promise<LikeStatus> => {
+        const res = await api.get<LikeStatus>(`/likes/posts/${postId}/status/`);
+        return res.data;
+    },
+
     likePost: async (postId: number): Promise<LikeStatus> => {
         const res = await api.post<LikeStatus>(`/likes/posts/${postId}/like/`);
         return res.data;

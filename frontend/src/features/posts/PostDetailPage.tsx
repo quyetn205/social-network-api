@@ -41,7 +41,7 @@ export default function PostDetailPage() {
     });
 
     const { data: likeStatus } = useQuery({
-        queryKey: ['like-status', postId],
+        queryKey: ['likeStatus', postId],
         queryFn: () =>
             api
                 .get<{ liked: boolean }>(`/likes/posts/${postId}/status/`)
@@ -80,16 +80,22 @@ export default function PostDetailPage() {
     });
 
     const likeMutation = useMutation({
-        mutationFn: () =>
-            liked
-                ? postsApi.unlikePost(Number(postId))
-                : postsApi.likePost(Number(postId)),
-        onMutate: () => {
-            setLiked(!liked);
-            setLikeCount((c) => c + (liked ? -1 : 1));
+        mutationFn: async () => {
+            const id = Number(postId);
+            const status = await postsApi.getLikeStatus(id);
+            if (status.liked) {
+                await postsApi.unlikePost(id);
+                return { liked: false, delta: -1 };
+            }
+            await postsApi.likePost(id);
+            return { liked: true, delta: 1 };
+        },
+        onSuccess: (result) => {
+            setLiked(result.liked);
+            setLikeCount((c) => Math.max(0, c + result.delta));
         },
         onError: () => {
-            setLiked(liked);
+            showToast('Không thể thích bài viết', 'error');
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['post', postId] });
