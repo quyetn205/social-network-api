@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { notificationsApi } from '../../services/notifications';
 import { useNotificationsStream } from '../../hooks/useNotificationsStream';
 
+// Hiển thị chuông thông báo và số lượng chưa đọc.
 export default function NotificationBell() {
     useNotificationsStream();
 

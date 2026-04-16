@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS topics (
 CREATE TABLE IF NOT EXISTS posts (
   id SERIAL PRIMARY KEY,
   content TEXT NOT NULL,
+  visibility VARCHAR(20) NOT NULL DEFAULT 'public',
   author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   likes_count INTEGER DEFAULT 0,
   comments_count INTEGER DEFAULT 0,
@@ -174,6 +175,9 @@ export async function initDb() {
     const migrationSteps = [
         'ALTER TABLE posts ADD COLUMN IF NOT EXISTS likes_count INTEGER DEFAULT 0',
         'ALTER TABLE posts ADD COLUMN IF NOT EXISTS comments_count INTEGER DEFAULT 0',
+        "ALTER TABLE posts ADD COLUMN IF NOT EXISTS visibility VARCHAR(20) DEFAULT 'public'",
+        "UPDATE posts SET visibility = COALESCE(visibility, 'public')",
+        "ALTER TABLE posts ALTER COLUMN visibility SET DEFAULT 'public'",
         'UPDATE posts SET created_at = NOW() WHERE created_at IS NULL',
         'ALTER TABLE posts ALTER COLUMN created_at DROP NOT NULL',
         'ALTER TABLE posts ALTER COLUMN created_at SET DEFAULT NOW()',

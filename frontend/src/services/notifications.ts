@@ -27,6 +27,7 @@ export interface UnreadCountResponse {
     count: number;
 }
 
+// Chuẩn hóa dữ liệu thông báo từ API.
 function parseNotificationData(rawData: unknown): NotificationData {
     let data: Record<string, unknown> = {};
 
@@ -61,6 +62,7 @@ function parseNotificationData(rawData: unknown): NotificationData {
     };
 }
 
+// Làm sạch cấu trúc thông báo trả về.
 function normalizeNotification(notification: Notification): Notification {
     const data = parseNotificationData(notification.data);
 
@@ -71,6 +73,7 @@ function normalizeNotification(notification: Notification): Notification {
 }
 
 export const notificationsApi = {
+    // Lấy danh sách thông báo.
     getNotifications: async (
         cursor?: string,
         limit = 20
@@ -86,6 +89,7 @@ export const notificationsApi = {
         };
     },
 
+    // Lấy số thông báo chưa đọc.
     getUnreadCount: async (): Promise<UnreadCountResponse> => {
         const res = await api.get<UnreadCountResponse>(
             '/notifications/unread-count'
@@ -93,10 +97,12 @@ export const notificationsApi = {
         return res.data;
     },
 
+    // Đánh dấu một thông báo đã đọc.
     markRead: async (id: number): Promise<void> => {
         await api.put(`/notifications/${id}/read`);
     },
 
+    // Đánh dấu tất cả thông báo đã đọc.
     markAllRead: async (): Promise<void> => {
         await api.put('/notifications/read-all');
     }

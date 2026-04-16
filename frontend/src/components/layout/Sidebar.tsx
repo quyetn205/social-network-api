@@ -13,6 +13,7 @@ const navItems = [
     { to: '/search', label: 'Tìm kiếm', icon: '🔎' }
 ];
 
+// Hiển thị thanh điều hướng bên trái.
 export default function Sidebar() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -32,6 +33,7 @@ export default function Sidebar() {
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
+    // Tìm người dùng từ sidebar.
     const handleSearch = (val: string) => {
         setQuery(val);
         if (debounceRef.current) clearTimeout(debounceRef.current);

@@ -5,6 +5,7 @@ export interface User {
     username: string;
     email: string;
     avatar_url?: string;
+    friend?: boolean;
     date_of_birth: string | null;
     is_admin: boolean;
     created_at: string;
@@ -22,10 +23,13 @@ export interface Topic {
     description: string | null;
 }
 
+export type PostVisibility = 'public' | 'friend' | 'private';
+
 export interface Post {
     id: number;
     content: string;
     image_url?: string | null;
+    visibility?: PostVisibility;
     author_id: number;
     created_at: string;
     updated_at: string;
@@ -55,6 +59,7 @@ export interface LikeStatus {
 
 export interface FollowStatus {
     following: boolean;
+    friend?: boolean;
 }
 
 export interface TokenResponse {

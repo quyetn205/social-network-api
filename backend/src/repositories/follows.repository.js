@@ -1,20 +1,24 @@
 import { sql } from '../../db.js';
 
+// Kiểm tra người dùng có tồn tại.
 export async function selectUserExists(userId) {
     const { rows } = await sql`SELECT id FROM users WHERE id = ${userId}`;
     return Boolean(rows[0]);
 }
 
+// Tạo quan hệ theo dõi.
 export async function insertFollow(followerId, followingId) {
     await sql`INSERT INTO follows (follower_id, following_id) VALUES (${followerId}, ${followingId})`;
 }
 
+// Xóa quan hệ theo dõi.
 export async function deleteFollow(followerId, followingId) {
     const result =
         await sql`DELETE FROM follows WHERE follower_id = ${followerId} AND following_id = ${followingId} RETURNING *`;
     return result.rowCount > 0;
 }
 
+// Lấy danh sách follower hoặc following.
 export async function selectFollowRows(userId, direction, cursor, limit) {
     const isFollowers = direction === 'followers';
     let rows;
@@ -60,8 +64,21 @@ export async function selectFollowRows(userId, direction, cursor, limit) {
     return { rows: rows.slice(0, limit), hasMore: rows.length > limit };
 }
 
+// Kiểm tra trạng thái theo dõi.
 export async function selectFollowStatus(followerId, followingId) {
     const { rows } =
         await sql`SELECT 1 FROM follows WHERE follower_id = ${followerId} AND following_id = ${followingId} LIMIT 1`;
+    return rows.length > 0;
+}
+
+// Kiểm tra hai người có theo dõi lẫn nhau không.
+export async function selectFriendStatus(userAId, userBId) {
+    const { rows } = await sql`
+            SELECT 1
+            FROM follows f1
+            JOIN follows f2 ON f2.follower_id = f1.following_id AND f2.following_id = f1.follower_id
+            WHERE f1.follower_id = ${userAId}
+                AND f1.following_id = ${userBId}
+            LIMIT 1`;
     return rows.length > 0;
 }

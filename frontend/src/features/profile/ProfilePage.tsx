@@ -15,6 +15,7 @@ import { useToast } from '../../context/ToastContext';
 
 type Tab = 'posts' | 'followers' | 'following';
 
+// Hiển thị một người trong danh sách theo dõi.
 function FollowUserCard({ user }: { user: User }) {
     const { data: latestUser } = useQuery({
         queryKey: ['user', user.id],
@@ -39,6 +40,11 @@ function FollowUserCard({ user }: { user: User }) {
                 <div className='font-medium text-gray-900 dark:text-dark-text truncate text-sm'>
                     {user.username}
                 </div>
+                {user.friend && (
+                    <div className='mt-1 inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-300'>
+                        Bạn bè
+                    </div>
+                )}
                 <div className='text-xs text-gray-400 dark:text-dark-muted truncate'>
                     {user.email}
                 </div>
@@ -47,6 +53,7 @@ function FollowUserCard({ user }: { user: User }) {
     );
 }
 
+// Hiển thị trang hồ sơ người dùng.
 export default function ProfilePage() {
     const { userId } = useParams<{ userId: string }>();
     const { user: currentUser } = useAuth();
@@ -69,6 +76,7 @@ export default function ProfilePage() {
     });
 
     const following = followStatus?.following ?? false;
+    const friend = followStatus?.friend ?? false;
 
     const followMutation = useMutation({
         mutationFn: () =>
@@ -80,11 +88,13 @@ export default function ProfilePage() {
 
             const previousFollowStatus = queryClient.getQueryData<{
                 following: boolean;
+                friend?: boolean;
             }>(['follow-status', uid]);
 
             const nextFollowing = !following;
             queryClient.setQueryData(['follow-status', uid], {
-                following: nextFollowing
+                following: nextFollowing,
+                friend: nextFollowing ? friend : false
             });
 
             queryClient.setQueryData(['user', uid], (old: any) => {
@@ -101,12 +111,15 @@ export default function ProfilePage() {
         },
         onSuccess: (data) => {
             queryClient.setQueryData(['follow-status', uid], {
-                following: data.following
+                following: data.following,
+                friend: data.friend ?? false
             });
             showToast(
-                data.following
-                    ? 'Đã theo dõi người dùng này'
-                    : 'Đã bỏ theo dõi người dùng này',
+                data.friend
+                    ? 'Đã trở thành bạn bè'
+                    : data.following
+                      ? 'Đã theo dõi người dùng này'
+                      : 'Đã bỏ theo dõi người dùng này',
                 'success'
             );
         },
@@ -209,16 +222,20 @@ export default function ProfilePage() {
                                 followMutation.isPending || followStatusLoading
                             }
                             className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                following
-                                    ? 'bg-gray-100 dark:bg-dark-border text-gray-700 dark:text-dark-text hover:bg-gray-200 dark:hover:bg-dark-bg'
-                                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                                friend
+                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/40'
+                                    : following
+                                      ? 'bg-gray-100 dark:bg-dark-border text-gray-700 dark:text-dark-text hover:bg-gray-200 dark:hover:bg-dark-bg'
+                                      : 'bg-blue-500 text-white hover:bg-blue-600'
                             }`}
                         >
                             {followMutation.isPending || followStatusLoading
                                 ? '...'
-                                : following
-                                  ? 'Đã theo dõi'
-                                  : 'Theo dõi'}
+                                : friend
+                                  ? 'Bạn bè'
+                                  : following
+                                    ? 'Đã theo dõi'
+                                    : 'Theo dõi'}
                         </button>
                     )}
                 </div>

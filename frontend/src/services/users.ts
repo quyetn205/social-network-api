@@ -49,16 +49,19 @@ export interface Bookmark {
 }
 
 export const usersApi = {
+    // Lấy thông tin người dùng.
     getUser: async (userId: number): Promise<User> => {
         const res = await api.get<User>(`/users/${userId}`);
         return res.data;
     },
 
+    // Lấy hồ sơ người dùng.
     getUserProfile: async (userId: number): Promise<UserProfile> => {
         const res = await api.get<UserProfile>(`/users/${userId}/profile`);
         return res.data;
     },
 
+    // Cập nhật hồ sơ cá nhân.
     updateMe: async (data: {
         username: string;
         date_of_birth?: string | null;
@@ -84,6 +87,7 @@ export const usersApi = {
         return res.data;
     },
 
+    // Theo dõi người dùng.
     followUser: async (userId: number): Promise<FollowStatus> => {
         const res = await api.post<FollowStatus>(
             `/follows/users/${userId}/follow/`
@@ -91,6 +95,7 @@ export const usersApi = {
         return res.data;
     },
 
+    // Bỏ theo dõi người dùng.
     unfollowUser: async (userId: number): Promise<FollowStatus> => {
         const res = await api.delete<FollowStatus>(
             `/follows/users/${userId}/follow/`
@@ -98,6 +103,7 @@ export const usersApi = {
         return res.data;
     },
 
+    // Lấy danh sách chủ đề quan tâm.
     getPreferences: async (): Promise<PreferenceWithTopics> => {
         const res = await api.get<PreferenceWithTopics>(
             '/preferences/users/me/preferences'
@@ -105,6 +111,7 @@ export const usersApi = {
         return res.data;
     },
 
+    // Cập nhật danh sách chủ đề quan tâm.
     updatePreferences: async (
         topicIds: number[]
     ): Promise<PreferenceWithTopics> => {
@@ -115,6 +122,7 @@ export const usersApi = {
         return res.data;
     },
 
+    // Tìm người dùng.
     searchUsers: async (query: string): Promise<SearchUserResult[]> => {
         const res = await api.get<SearchUserResult[]>('/users/search', {
             params: { q: query }
@@ -122,6 +130,7 @@ export const usersApi = {
         return res.data;
     },
 
+    // Lấy danh sách người theo dõi.
     getFollowers: async (
         userId: number,
         cursor?: string,
@@ -136,6 +145,7 @@ export const usersApi = {
         return res.data;
     },
 
+    // Lấy danh sách đang theo dõi.
     getFollowing: async (
         userId: number,
         cursor?: string,
@@ -150,6 +160,7 @@ export const usersApi = {
         return res.data;
     },
 
+    // Đổi mật khẩu.
     changePassword: async (
         currentPassword: string,
         newPassword: string
@@ -164,12 +175,14 @@ export const usersApi = {
         return res.data;
     },
 
+    // Xóa tài khoản.
     deleteAccount: async (): Promise<{ success: boolean }> => {
         const res = await api.delete<{ success: boolean }>('/users/me');
         return res.data;
     },
 
     // Notifications
+    // Lấy thông báo.
     getNotifications: async (
         cursor?: string,
         limit = 20
@@ -182,6 +195,7 @@ export const usersApi = {
         return res.data;
     },
 
+    // Lấy số thông báo chưa đọc.
     getUnreadCount: async (): Promise<UnreadCountResponse> => {
         const res = await api.get<UnreadCountResponse>(
             '/notifications/unread-count'
@@ -189,23 +203,28 @@ export const usersApi = {
         return res.data;
     },
 
+    // Đánh dấu thông báo đã đọc.
     markNotificationRead: async (id: number): Promise<void> => {
         await api.put(`/notifications/${id}/read`);
     },
 
+    // Đánh dấu tất cả thông báo đã đọc.
     markAllNotificationsRead: async (): Promise<void> => {
         await api.put('/notifications/read-all');
     },
 
     // Bookmarks
+    // Lưu bài viết.
     bookmarkPost: async (postId: number): Promise<void> => {
         await api.post(`/bookmarks/posts/${postId}/`);
     },
 
+    // Bỏ lưu bài viết.
     unbookmarkPost: async (postId: number): Promise<void> => {
         await api.delete(`/bookmarks/posts/${postId}/`);
     },
 
+    // Lấy danh sách bài đã lưu.
     getBookmarks: async (
         cursor?: string,
         limit = 20
@@ -223,6 +242,7 @@ export const usersApi = {
     },
 
     // User posts
+    // Lấy bài viết của người dùng.
     getUserPosts: async (
         userId: number,
         cursor?: string,
@@ -238,6 +258,7 @@ export const usersApi = {
     },
 
     // Follow status check
+    // Lấy trạng thái follow.
     getFollowStatus: async (userId: number): Promise<FollowStatus> => {
         const res = await api.get<FollowStatus>(
             `/follows/users/${userId}/status/`

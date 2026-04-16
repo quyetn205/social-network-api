@@ -37,11 +37,15 @@ import {
     updatePostDetails
 } from '../repositories/posts.repository.js';
 
+const ALLOWED_VISIBILITIES = new Set(['public', 'friend', 'private']);
+
+// Chuyển hàng bài viết thành payload trả về.
 function mapPost(post, topicsMap, extra = {}) {
     return {
         id: post.id,
         content: post.content,
         image_url: post.image_url || null,
+        visibility: post.visibility || 'public',
         author_id: post.author_id,
         created_at: post.created_at,
         updated_at: post.updated_at,
@@ -61,6 +65,7 @@ function mapPost(post, topicsMap, extra = {}) {
     };
 }
 
+// Chuyển hàng bình luận thành payload trả về.
 function mapComment(comment) {
     return {
         id: comment.id,
@@ -79,6 +84,7 @@ function mapComment(comment) {
     };
 }
 
+// Chuẩn hóa danh sách chủ đề từ request.
 function parseTopicIds(value) {
     if (value === undefined || value === null || value === '') return [];
     if (Array.isArray(value)) {
@@ -99,6 +105,39 @@ function parseTopicIds(value) {
     return [];
 }
 
+// Chuẩn hóa chế độ hiển thị của bài viết.
+function normalizeVisibility(value) {
+    const normalized =
+        typeof value === 'string' ? value.trim().toLowerCase() : '';
+    if (ALLOWED_VISIBILITIES.has(normalized)) return normalized;
+    return 'public';
+}
+
+// Kiểm tra người xem có được phép thấy bài viết không.
+async function canViewPost(
+    post,
+    viewer,
+    viewerFollowingIds,
+    authorFollowingCache
+) {
+    const visibility = normalizeVisibility(post.visibility);
+    if (visibility === 'public') return true;
+    if (!viewer) return false;
+    if (post.author_id === viewer.id) return true;
+    if (visibility === 'private') return false;
+    if (visibility === 'friend') {
+        if (!viewerFollowingIds.includes(post.author_id)) return false;
+        let authorFollowingIds = authorFollowingCache.get(post.author_id);
+        if (!authorFollowingIds) {
+            authorFollowingIds = await selectFollowingIds(post.author_id);
+            authorFollowingCache.set(post.author_id, authorFollowingIds);
+        }
+        return authorFollowingIds.includes(viewer.id);
+    }
+    return true;
+}
+
+// Lấy feed bài viết.
 export async function GET_feed(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
@@ -109,9 +148,17 @@ export async function GET_feed(req, res) {
     const preferredTopicIds = await selectPreferenceTopicIds(user.id);
     const followingIds = await selectFollowingIds(user.id);
     const topicsMap = await selectTopicsMap();
+    const authorFollowingCache = new Map();
     const { rows: posts, hasMore } = await selectFeedPosts(cursor, limit);
 
-    const items = posts.map((post) => {
+    const visiblePosts = [];
+    for (const post of posts) {
+        if (await canViewPost(post, user, followingIds, authorFollowingCache)) {
+            visiblePosts.push(post);
+        }
+    }
+
+    const items = visiblePosts.map((post) => {
         const postTopicIds = (topicsMap[post.id] || []).map(
             (topic) => topic.id
         );
@@ -134,6 +181,7 @@ export async function GET_feed(req, res) {
     return ok(res, { items, next_cursor });
 }
 
+// Tìm bài viết.
 export async function GET_search_posts(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
@@ -142,15 +190,30 @@ export async function GET_search_posts(req, res) {
     const cursor = req.query.cursor;
     const limit = parseInt(req.query.limit || '20', 10);
 
+    const viewerFollowingIds = await selectFollowingIds(user.id);
+    const authorFollowingCache = new Map();
     const topicsMap = await selectTopicsMap();
     const { rows: posts, hasMore } = await selectSearchPosts(q, cursor, limit);
-    const items = posts.map((post) => mapPost(post, topicsMap));
+    const items = [];
+    for (const post of posts) {
+        if (
+            await canViewPost(
+                post,
+                user,
+                viewerFollowingIds,
+                authorFollowingCache
+            )
+        ) {
+            items.push(mapPost(post, topicsMap));
+        }
+    }
 
     const next_cursor =
         hasMore && items.length > 0 ? items[items.length - 1].created_at : null;
     return ok(res, { items, next_cursor });
 }
 
+// Lấy bài viết khám phá.
 export async function GET_explore(req, res) {
     await getUserFromToken(req);
 
@@ -158,25 +221,43 @@ export async function GET_explore(req, res) {
     const cursor = req.query.cursor;
     const limit = parseInt(req.query.limit || '10', 10);
 
+    const user = await getUserFromToken(req);
+    if (!user) return err(res, 401, 'Could not validate credentials');
+    const viewerFollowingIds = await selectFollowingIds(user.id);
+    const authorFollowingCache = new Map();
     const topicsMap = await selectTopicsMap();
     const { rows: posts, hasMore } = await selectExplorePosts(
         topicId,
         cursor,
         limit
     );
-    const items = posts.map((post) => mapPost(post, topicsMap));
+    const items = [];
+    for (const post of posts) {
+        if (
+            await canViewPost(
+                post,
+                user,
+                viewerFollowingIds,
+                authorFollowingCache
+            )
+        ) {
+            items.push(mapPost(post, topicsMap));
+        }
+    }
 
     const next_cursor =
         hasMore && items.length > 0 ? items[items.length - 1].created_at : null;
     return ok(res, { items, next_cursor });
 }
 
+// Tạo bài viết mới.
 export async function POST_create_post(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
 
     const body = req.body;
     const { content, topic_ids } = body;
+    const visibility = normalizeVisibility(body.visibility);
     const normalizedContent = typeof content === 'string' ? content.trim() : '';
     const normalizedTopicIds = parseTopicIds(topic_ids);
     const imageUrl = req.file
@@ -194,7 +275,12 @@ export async function POST_create_post(req, res) {
 
     let post;
     try {
-        post = await insertPost(normalizedContent, user.id, imageUrl);
+        post = await insertPost(
+            normalizedContent,
+            user.id,
+            imageUrl,
+            visibility
+        );
         if (normalizedTopicIds.length) {
             await insertPostTopics(post.id, normalizedTopicIds);
         }
@@ -213,6 +299,7 @@ export async function POST_create_post(req, res) {
         updated_at: post.updated_at,
         likes_count: post.likes_count,
         comments_count: post.comments_count,
+        visibility: post.visibility || visibility,
         topics: topicsRows,
         author: {
             id: user.id,
@@ -226,6 +313,7 @@ export async function POST_create_post(req, res) {
     });
 }
 
+// Cập nhật bài viết.
 export async function PUT_update_post(req, res, postId) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
@@ -238,6 +326,10 @@ export async function PUT_update_post(req, res, postId) {
 
     const body = req.body;
     const { content, topic_ids } = body;
+    const visibility =
+        body.visibility !== undefined
+            ? normalizeVisibility(body.visibility)
+            : undefined;
     const removeImage =
         String(body.remove_image || '').toLowerCase() === 'true';
     const normalizedContent =
@@ -271,8 +363,17 @@ export async function PUT_update_post(req, res, postId) {
 
     let post;
     try {
-        if (content !== undefined || nextImageUrl !== previousImageUrl) {
-            post = await updatePostDetails(postId, contentValue, nextImageUrl);
+        if (
+            content !== undefined ||
+            nextImageUrl !== previousImageUrl ||
+            visibility !== undefined
+        ) {
+            post = await updatePostDetails(
+                postId,
+                contentValue,
+                nextImageUrl,
+                visibility
+            );
         } else {
             post = existing;
         }
@@ -298,6 +399,7 @@ export async function PUT_update_post(req, res, postId) {
         updated_at: post.updated_at,
         likes_count: post.likes_count,
         comments_count: post.comments_count,
+        visibility: post.visibility || existing.visibility || 'public',
         topics: topicsRows,
         author: {
             id: user.id,
@@ -311,6 +413,7 @@ export async function PUT_update_post(req, res, postId) {
     });
 }
 
+// Xóa bài viết.
 export async function DELETE_delete_post(req, res, postId) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
@@ -326,17 +429,32 @@ export async function DELETE_delete_post(req, res, postId) {
     return noContent(res);
 }
 
+// Lấy chi tiết bài viết.
 export async function GET_post(req, res, id) {
-    await getUserFromToken(req);
+    const viewer = await getUserFromToken(req);
+    if (!viewer) return err(res, 401, 'Could not validate credentials');
 
     const post = await selectPostById(id);
     if (!post) return err(res, 404, 'Post not found');
+    const viewerFollowingIds = await selectFollowingIds(viewer.id);
+    const authorFollowingCache = new Map();
+    if (
+        !(await canViewPost(
+            post,
+            viewer,
+            viewerFollowingIds,
+            authorFollowingCache
+        ))
+    ) {
+        return err(res, 403, 'You are not authorized to view this post');
+    }
 
     const topicsRows = await selectPostTopicsForPost(id);
     return ok(res, {
         id: post.id,
         content: post.content,
         image_url: post.image_url || null,
+        visibility: post.visibility || 'public',
         author_id: post.author_id,
         created_at: post.created_at,
         updated_at: post.updated_at,
@@ -355,8 +473,25 @@ export async function GET_post(req, res, id) {
     });
 }
 
+// Lấy danh sách bình luận.
 export async function GET_comments(req, res, postId) {
-    await getUserFromToken(req);
+    const viewer = await getUserFromToken(req);
+    if (!viewer) return err(res, 401, 'Could not validate credentials');
+
+    const post = await selectPostById(postId);
+    if (!post) return err(res, 404, 'Post not found');
+    const viewerFollowingIds = await selectFollowingIds(viewer.id);
+    const authorFollowingCache = new Map();
+    if (
+        !(await canViewPost(
+            post,
+            viewer,
+            viewerFollowingIds,
+            authorFollowingCache
+        ))
+    ) {
+        return err(res, 403, 'You are not authorized to view this post');
+    }
 
     const cursor = req.query.cursor;
     const limit = parseInt(req.query.limit || '20', 10);
@@ -371,12 +506,25 @@ export async function GET_comments(req, res, postId) {
     return ok(res, { comments: items, next_cursor });
 }
 
+// Tạo bình luận mới.
 export async function POST_create_comment(req, res, postId) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
 
-    const post = await selectPostAuthor(postId);
+    const post = await selectPostById(postId);
     if (!post) return err(res, 404, 'Post not found');
+    const viewerFollowingIds = await selectFollowingIds(user.id);
+    const authorFollowingCache = new Map();
+    if (
+        !(await canViewPost(
+            post,
+            user,
+            viewerFollowingIds,
+            authorFollowingCache
+        ))
+    ) {
+        return err(res, 403, 'You are not authorized to view this post');
+    }
 
     const body = req.body;
     const { content, parent_id } = body;
@@ -425,19 +573,47 @@ export async function POST_create_comment(req, res, postId) {
     });
 }
 
+// Kiểm tra trạng thái thích.
 export async function GET_like_status(req, res, postId) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
+    const post = await selectPostById(postId);
+    if (!post) return err(res, 404, 'Post not found');
+    const viewerFollowingIds = await selectFollowingIds(user.id);
+    const authorFollowingCache = new Map();
+    if (
+        !(await canViewPost(
+            post,
+            user,
+            viewerFollowingIds,
+            authorFollowingCache
+        ))
+    ) {
+        return err(res, 403, 'You are not authorized to view this post');
+    }
     const liked = await selectLikeStatus(user.id, postId);
     return ok(res, { liked });
 }
 
+// Thích bài viết.
 export async function POST_like(req, res, postId) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
 
-    const post = await selectPostAuthor(postId);
+    const post = await selectPostById(postId);
     if (!post) return err(res, 404, 'Post not found');
+    const viewerFollowingIds = await selectFollowingIds(user.id);
+    const authorFollowingCache = new Map();
+    if (
+        !(await canViewPost(
+            post,
+            user,
+            viewerFollowingIds,
+            authorFollowingCache
+        ))
+    ) {
+        return err(res, 403, 'You are not authorized to view this post');
+    }
 
     try {
         await insertLike(user.id, postId);
@@ -461,9 +637,25 @@ export async function POST_like(req, res, postId) {
     }
 }
 
+// Bỏ thích bài viết.
 export async function DELETE_unlike(req, res, postId) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
+
+    const post = await selectPostById(postId);
+    if (!post) return err(res, 404, 'Post not found');
+    const viewerFollowingIds = await selectFollowingIds(user.id);
+    const authorFollowingCache = new Map();
+    if (
+        !(await canViewPost(
+            post,
+            user,
+            viewerFollowingIds,
+            authorFollowingCache
+        ))
+    ) {
+        return err(res, 403, 'You are not authorized to view this post');
+    }
 
     const removed = await deleteLike(user.id, postId);
     if (!removed) return err(res, 404, 'Like not found');

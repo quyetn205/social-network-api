@@ -1,5 +1,12 @@
 import { api } from '../lib/api';
-import type { Post, PostWithScore, Topic, Comment, LikeStatus } from './types';
+import type {
+    Post,
+    PostWithScore,
+    Topic,
+    Comment,
+    LikeStatus,
+    PostVisibility
+} from './types';
 
 export interface PaginatedPosts {
     items: Post[];
@@ -12,6 +19,7 @@ export interface PaginatedPostsWithScore {
 }
 
 export const postsApi = {
+    // Lấy feed bài viết.
     getFeed: async (
         cursor?: string,
         limit = 20
@@ -24,19 +32,23 @@ export const postsApi = {
         return res.data;
     },
 
+    // Lấy chi tiết bài viết.
     getPost: async (postId: number): Promise<Post> => {
         const res = await api.get<Post>(`/posts/${postId}`);
         return res.data;
     },
 
+    // Tạo bài viết mới.
     createPost: async (
         content: string,
         topicIds: number[] = [],
-        imageFile?: File | null
+        imageFile?: File | null,
+        visibility: PostVisibility = 'public'
     ): Promise<Post> => {
         const formData = new FormData();
         formData.append('content', content);
         formData.append('topic_ids', JSON.stringify(topicIds));
+        formData.append('visibility', visibility);
         if (imageFile) {
             formData.append('image', imageFile);
         }
@@ -45,17 +57,22 @@ export const postsApi = {
         return res.data;
     },
 
+    // Cập nhật bài viết.
     updatePost: async (
         postId: number,
         content: string,
         topicIds?: number[],
         imageFile?: File | null,
-        removeImage = false
+        removeImage = false,
+        visibility?: PostVisibility
     ): Promise<Post> => {
         const formData = new FormData();
         formData.append('content', content);
         if (topicIds !== undefined) {
             formData.append('topic_ids', JSON.stringify(topicIds));
+        }
+        if (visibility !== undefined) {
+            formData.append('visibility', visibility);
         }
         if (imageFile) {
             formData.append('image', imageFile);
@@ -68,10 +85,12 @@ export const postsApi = {
         return res.data;
     },
 
+    // Xóa bài viết.
     deletePost: async (postId: number): Promise<void> => {
         await api.delete(`/posts/${postId}`);
     },
 
+    // Lấy danh sách bài khám phá.
     explore: async (
         topicId?: number,
         cursor?: string,
@@ -84,6 +103,7 @@ export const postsApi = {
         return res.data;
     },
 
+    // Tìm bài viết.
     searchPosts: async (
         query: string,
         cursor?: string,
@@ -98,11 +118,13 @@ export const postsApi = {
         return res.data;
     },
 
+    // Lấy danh sách chủ đề.
     getTopics: async (): Promise<Topic[]> => {
         const res = await api.get<Topic[]>('/topics/');
         return res.data;
     },
 
+    // Lấy bình luận của bài viết.
     getComments: async (
         postId: number,
         cursor?: string,
@@ -117,6 +139,7 @@ export const postsApi = {
         return res.data;
     },
 
+    // Tạo bình luận.
     createComment: async (
         postId: number,
         content: string,
@@ -129,16 +152,19 @@ export const postsApi = {
         return res.data;
     },
 
+    // Lấy trạng thái thích.
     getLikeStatus: async (postId: number): Promise<LikeStatus> => {
         const res = await api.get<LikeStatus>(`/likes/posts/${postId}/status/`);
         return res.data;
     },
 
+    // Thích bài viết.
     likePost: async (postId: number): Promise<LikeStatus> => {
         const res = await api.post<LikeStatus>(`/likes/posts/${postId}/like/`);
         return res.data;
     },
 
+    // Bỏ thích bài viết.
     unlikePost: async (postId: number): Promise<LikeStatus> => {
         const res = await api.delete<LikeStatus>(
             `/likes/posts/${postId}/like/`

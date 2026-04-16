@@ -4,7 +4,12 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { postsApi } from '../../services/posts';
 import { bookmarksApi } from '../../services/bookmarks';
 import { api } from '../../lib/api';
-import type { PostWithScore, Topic, LikeStatus } from '../../services/types';
+import type {
+    PostWithScore,
+    Topic,
+    LikeStatus,
+    PostVisibility
+} from '../../services/types';
 import Avatar from '../../components/ui/Avatar';
 import TopicBadge from '../../components/ui/TopicBadge';
 import TopicSelector from '../../components/ui/TopicSelector';
@@ -15,6 +20,7 @@ interface PostCardProps {
     post: PostWithScore;
 }
 
+// Tính thời gian đã trôi qua.
 function timeAgo(dateStr: string) {
     const now = Date.now();
     const then = new Date(dateStr).getTime();
@@ -25,6 +31,18 @@ function timeAgo(dateStr: string) {
     return `${Math.floor(diff / 86400)}d trước`;
 }
 
+function visibilityLabel(visibility?: PostVisibility) {
+    switch (visibility) {
+        case 'friend':
+            return 'Bạn bè';
+        case 'private':
+            return 'Chỉ mình tôi';
+        default:
+            return 'Công khai';
+    }
+}
+
+// Hiển thị một thẻ bài viết trong feed.
 export default function PostCard({ post }: PostCardProps) {
     const { user } = useAuth();
     const { showToast } = useToast();
@@ -72,6 +90,9 @@ export default function PostCard({ post }: PostCardProps) {
     const [editTopics, setEditTopics] = useState<number[]>(
         post.topics.map((t: Topic) => t.id)
     );
+    const [editVisibility, setEditVisibility] = useState<PostVisibility>(
+        post.visibility || 'public'
+    );
     const [editImageFile, setEditImageFile] = useState<File | null>(null);
     const [editImagePreview, setEditImagePreview] = useState<string | null>(
         post.image_url || null
@@ -115,7 +136,8 @@ export default function PostCard({ post }: PostCardProps) {
                 editContent,
                 editTopics,
                 editImageFile,
-                removeEditImage
+                removeEditImage,
+                editVisibility
             ),
         onSuccess: (updated) => {
             queryClient.invalidateQueries({ queryKey: ['feed'] });
@@ -177,6 +199,22 @@ export default function PostCard({ post }: PostCardProps) {
                     rows={4}
                 />
                 <TopicSelector selected={editTopics} onChange={setEditTopics} />
+                <div>
+                    <label className='block text-sm font-medium text-gray-600 dark:text-dark-muted mb-1'>
+                        Ai có thể xem bài viết này?
+                    </label>
+                    <select
+                        value={editVisibility}
+                        onChange={(e) =>
+                            setEditVisibility(e.target.value as PostVisibility)
+                        }
+                        className='w-full border border-gray-200 dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-dark-bg text-gray-900 dark:text-dark-text'
+                    >
+                        <option value='public'>Công khai</option>
+                        <option value='friend'>Bạn bè</option>
+                        <option value='private'>Chỉ mình tôi</option>
+                    </select>
+                </div>
                 {editImagePreview && (
                     <div className='overflow-hidden rounded-lg border border-gray-200 dark:border-dark-border bg-gray-50 dark:bg-dark-bg'>
                         <img
@@ -225,6 +263,7 @@ export default function PostCard({ post }: PostCardProps) {
                             setEditImageFile(null);
                             setRemoveEditImage(false);
                             setEditImagePreview(post.image_url || null);
+                            setEditVisibility(post.visibility || 'public');
                         }}
                         className='px-4 py-2 rounded-lg text-sm text-gray-600 dark:text-dark-muted hover:bg-gray-100 dark:hover:bg-dark-border'
                     >
@@ -267,6 +306,9 @@ export default function PostCard({ post }: PostCardProps) {
                         {timeAgo(post.created_at)}
                     </div>
                 </div>
+                <span className='text-xs bg-gray-100 dark:bg-dark-bg text-gray-500 dark:text-dark-muted px-2 py-1 rounded-full'>
+                    {visibilityLabel(post.visibility)}
+                </span>
                 {post.feed_score > 0 && (
                     <span className='text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full'>
                         {post.feed_score === 3

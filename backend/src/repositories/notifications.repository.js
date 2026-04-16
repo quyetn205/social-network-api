@@ -1,5 +1,6 @@
 import { sql } from '../../db.js';
 
+// Lấy danh sách thông báo.
 export async function selectNotifications(userId, cursor, limit) {
     let query;
     if (cursor) {
@@ -17,6 +18,7 @@ export async function selectNotifications(userId, cursor, limit) {
     return { rows: rows.slice(0, limit), hasMore: rows.length > limit };
 }
 
+// Lấy người dùng liên quan đến thông báo.
 export async function selectNotificationActorUsers(actorIds) {
     const { rows } = await sql`
       SELECT id, username, avatar_url
@@ -25,16 +27,19 @@ export async function selectNotificationActorUsers(actorIds) {
     return rows;
 }
 
+// Đếm số thông báo chưa đọc.
 export async function countUnreadNotifications(userId) {
     const { rows } =
         await sql`SELECT COUNT(*) as count FROM notifications WHERE user_id = ${userId} AND is_read = FALSE`;
     return Number(rows[0]?.count || 0);
 }
 
+// Đánh dấu một thông báo đã đọc.
 export async function markNotificationRead(userId, notifId) {
     await sql`UPDATE notifications SET is_read = TRUE WHERE id = ${notifId} AND user_id = ${userId}`;
 }
 
+// Đánh dấu toàn bộ thông báo đã đọc.
 export async function markAllNotificationsRead(userId) {
     await sql`UPDATE notifications SET is_read = TRUE WHERE user_id = ${userId}`;
 }

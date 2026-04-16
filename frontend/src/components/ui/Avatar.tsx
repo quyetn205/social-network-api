@@ -6,6 +6,7 @@ interface AvatarProps {
     size?: 'sm' | 'md' | 'lg';
 }
 
+// Hiển thị avatar hoặc chữ cái thay thế.
 export default function Avatar({
     username,
     avatarUrl,
