@@ -215,10 +215,8 @@ export async function GET_search_posts(req, res) {
 
 // Lấy bài viết khám phá.
 export async function GET_explore(req, res) {
-    await getUserFromToken(req);
-
     const topicId = req.query.topic_id;
-    const cursor = req.query.cursor;
+    let cursor = req.query.cursor || null;
     const limit = parseInt(req.query.limit || '10', 10);
 
     const user = await getUserFromToken(req);
@@ -226,28 +224,42 @@ export async function GET_explore(req, res) {
     const viewerFollowingIds = await selectFollowingIds(user.id);
     const authorFollowingCache = new Map();
     const topicsMap = await selectTopicsMap();
-    const { rows: posts, hasMore } = await selectExplorePosts(
-        topicId,
-        cursor,
-        limit
-    );
     const items = [];
-    for (const post of posts) {
-        if (
-            await canViewPost(
-                post,
-                user,
-                viewerFollowingIds,
-                authorFollowingCache
-            )
-        ) {
-            items.push(mapPost(post, topicsMap));
+
+    // Quét thêm các batch nếu batch hiện tại bị lọc sạch do quyền hiển thị.
+    let hasMore = true;
+    while (items.length < limit && hasMore) {
+        const { rows: posts, hasMore: batchHasMore } = await selectExplorePosts(
+            topicId,
+            cursor,
+            limit
+        );
+
+        if (posts.length === 0) {
+            hasMore = false;
+            cursor = null;
+            break;
         }
+
+        for (const post of posts) {
+            if (
+                await canViewPost(
+                    post,
+                    user,
+                    viewerFollowingIds,
+                    authorFollowingCache
+                )
+            ) {
+                items.push(mapPost(post, topicsMap));
+            }
+        }
+
+        cursor = posts[posts.length - 1].created_at;
+        hasMore = batchHasMore;
     }
 
-    const next_cursor =
-        hasMore && items.length > 0 ? items[items.length - 1].created_at : null;
-    return ok(res, { items, next_cursor });
+    const next_cursor = hasMore ? cursor : null;
+    return ok(res, { items: items.slice(0, limit), next_cursor });
 }
 
 // Tạo bài viết mới.

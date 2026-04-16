@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { postsApi } from '../../services/posts';
 import PostCard from '../feed/PostCard';
 import type { Post, Topic } from '../../services/types';
@@ -10,56 +10,41 @@ const LIMIT = 10;
 // Hiển thị trang khám phá bài viết.
 export default function ExplorePage() {
     const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
-    const [cursor, setCursor] = useState<string | null>(null);
-    const [allPosts, setAllPosts] = useState<Post[]>([]);
-    const [page, setPage] = useState(0);
-    const hasMoreRef = useRef(true);
-    const cursorRef = useRef<string | null>(null);
-    const isFetchingRef = useRef(false);
-    const topicRef = useRef<number | null>(null);
     const loadMoreRef = useRef<HTMLDivElement>(null);
-
-    cursorRef.current = cursor;
-    topicRef.current = selectedTopicId;
 
     const { data: topics } = useQuery({
         queryKey: ['topics'],
         queryFn: postsApi.getTopics
     });
 
-    const { isLoading, isFetching } = useQuery({
-        queryKey: ['explore', selectedTopicId, page],
-        queryFn: async () => {
-            if (isFetchingRef.current) return null;
-            isFetchingRef.current = true;
-            try {
-                const data = await postsApi.explore(
-                    topicRef.current ?? undefined,
-                    cursorRef.current ?? undefined,
-                    LIMIT
-                );
-                if (cursorRef.current === null) {
-                    setAllPosts(data.items);
-                } else {
-                    setAllPosts((prev) => [...prev, ...data.items]);
-                }
-                hasMoreRef.current = data.next_cursor !== null;
-                setCursor(data.next_cursor);
-                return data;
-            } finally {
-                isFetchingRef.current = false;
-            }
-        },
+    const {
+        data,
+        isLoading,
+        isFetching,
+        isFetchingNextPage,
+        hasNextPage,
+        fetchNextPage
+    } = useInfiniteQuery({
+        queryKey: ['explore', selectedTopicId],
+        initialPageParam: undefined as string | undefined,
+        queryFn: ({ pageParam }) =>
+            postsApi.explore(
+                selectedTopicId ?? undefined,
+                pageParam ?? undefined,
+                LIMIT
+            ),
+        getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
         staleTime: 30_000
     });
 
+    const dedupedPosts = (data?.pages ?? []).flatMap((page) => page.items);
+    const allPosts: Post[] = Array.from(
+        new Map(dedupedPosts.map((post) => [post.id, post])).values()
+    );
+
     // Đổi bộ lọc chủ đề.
     const handleTopicChange = (topicId: number | null) => {
-        setSelectedTopicId(topicId);
-        setAllPosts([]);
-        setCursor(null);
-        setPage(0);
-        hasMoreRef.current = true;
+        setSelectedTopicId((prev) => (prev === topicId ? prev : topicId));
     };
 
     // IntersectionObserver — scroll to load more
@@ -68,10 +53,10 @@ export default function ExplorePage() {
             (entries) => {
                 if (
                     entries[0].isIntersecting &&
-                    hasMoreRef.current &&
-                    !isFetchingRef.current
+                    hasNextPage &&
+                    !isFetchingNextPage
                 ) {
-                    setPage((p) => p + 1);
+                    fetchNextPage();
                 }
             },
             { threshold: 0.1 }
@@ -81,7 +66,14 @@ export default function ExplorePage() {
         return () => {
             if (el) observer.unobserve(el);
         };
-    }, []);
+    }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+    // Nếu page đầu rỗng nhưng vẫn còn cursor, tự tải tiếp để tránh trạng thái "rỗng giả".
+    useEffect(() => {
+        if (!isLoading && allPosts.length === 0 && hasNextPage && !isFetching) {
+            fetchNextPage();
+        }
+    }, [allPosts.length, fetchNextPage, hasNextPage, isFetching, isLoading]);
 
     return (
         <div className='space-y-4 max-w-xl mx-auto'>
@@ -139,16 +131,16 @@ export default function ExplorePage() {
             ))}
 
             {/* Load more */}
-            {allPosts.length > 0 && (
+            {(allPosts.length > 0 || hasNextPage) && (
                 <div ref={loadMoreRef} className='py-4 text-center'>
-                    {isFetching && (
+                    {(isFetching || isFetchingNextPage) && (
                         <div className='space-y-3'>
                             {[...Array(2)].map((_, i) => (
                                 <PostCardSkeleton key={i} />
                             ))}
                         </div>
                     )}
-                    {!hasMoreRef.current && (
+                    {!hasNextPage && (
                         <p className='text-gray-400 dark:text-dark-muted text-sm'>
                             Hết bài viết
                         </p>
