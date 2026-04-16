@@ -6,7 +6,7 @@ export async function selectBookmarkedPosts(userId, cursor, limit) {
         query = sql`
       SELECT p.*, b.created_at as bookmarked_at,
         u.id as "author.id", u.username as "author.username", u.email as "author.email",
-        u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+                u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
       FROM bookmarks b
       JOIN posts p ON p.id = b.post_id
       JOIN users u ON u.id = p.author_id
@@ -16,7 +16,7 @@ export async function selectBookmarkedPosts(userId, cursor, limit) {
         query = sql`
       SELECT p.*, b.created_at as bookmarked_at,
         u.id as "author.id", u.username as "author.username", u.email as "author.email",
-        u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+                u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
       FROM bookmarks b
       JOIN posts p ON p.id = b.post_id
       JOIN users u ON u.id = p.author_id

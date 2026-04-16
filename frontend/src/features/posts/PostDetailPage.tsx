@@ -166,7 +166,10 @@ export default function PostDetailPage() {
                 <div className='flex items-center gap-3'>
                     {post.author && (
                         <Link to={`/profile/${post.author.id}`}>
-                            <Avatar username={post.author.username} />
+                            <Avatar
+                                username={post.author.username}
+                                avatarUrl={post.author.avatar_url}
+                            />
                         </Link>
                     )}
                     <div>

@@ -22,6 +22,7 @@ function mapBookmarkPost(post, topicsMap) {
             id: post['author.id'],
             username: post['author.username'],
             email: post['author.email'],
+            avatar_url: post['author.avatar_url'],
             date_of_birth: post['author.date_of_birth'],
             is_admin: post['author.is_admin'],
             created_at: post['author.created_at']
