@@ -54,7 +54,7 @@ export async function selectUserPosts(userId, cursor, limit) {
         query = sql`
       SELECT p.*,
         u.id as "author.id", u.username as "author.username", u.email as "author.email",
-        u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+                u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
       FROM posts p
       JOIN users u ON u.id = p.author_id
       WHERE p.author_id = ${userId} AND p.created_at < ${cursor}
@@ -64,7 +64,7 @@ export async function selectUserPosts(userId, cursor, limit) {
         query = sql`
       SELECT p.*,
         u.id as "author.id", u.username as "author.username", u.email as "author.email",
-        u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+                u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
       FROM posts p
       JOIN users u ON u.id = p.author_id
       WHERE p.author_id = ${userId}
@@ -95,7 +95,7 @@ export async function selectPostTopicsMap() {
 
 export async function searchUsers(q) {
     const { rows } = await sql`
-    SELECT id, username, email, created_at FROM users
+    SELECT id, username, email, avatar_url, created_at FROM users
     WHERE username ILIKE ${'%' + q + '%'}
     LIMIT 20`;
     return rows;

@@ -34,26 +34,31 @@ const uploader = multer({
     }
 });
 
-export function uploadPostImage(req, res, next) {
-    uploader.single('image')(req, res, (error) => {
-        if (!error) {
-            next();
-            return;
-        }
+function handleSingleImageUpload(fieldName) {
+    return (req, res, next) => {
+        uploader.single(fieldName)(req, res, (error) => {
+            if (!error) {
+                next();
+                return;
+            }
 
-        if (error.code === 'LIMIT_FILE_SIZE') {
-            res.status(400).json({ detail: 'Image must not exceed 8MB' });
-            return;
-        }
+            if (error.code === 'LIMIT_FILE_SIZE') {
+                res.status(400).json({ detail: 'Image must not exceed 8MB' });
+                return;
+            }
 
-        if (error.message === 'Only image files are allowed') {
-            res.status(400).json({ detail: error.message });
-            return;
-        }
+            if (error.message === 'Only image files are allowed') {
+                res.status(400).json({ detail: error.message });
+                return;
+            }
 
-        next(error);
-    });
+            next(error);
+        });
+    };
 }
+
+export const uploadPostImage = handleSingleImageUpload('image');
+export const uploadAvatarImage = handleSingleImageUpload('avatar');
 
 export async function deleteUploadedFile(filePath) {
     if (!filePath) return;

@@ -33,7 +33,7 @@ export async function selectFeedPosts(cursor, limit) {
         query = sql`
       SELECT p.*,
         u.id as "author.id", u.username as "author.username", u.email as "author.email",
-        u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+                u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
       FROM posts p
       JOIN users u ON u.id = p.author_id
       WHERE p.created_at < ${cursor}
@@ -43,7 +43,7 @@ export async function selectFeedPosts(cursor, limit) {
         query = sql`
       SELECT p.*,
         u.id as "author.id", u.username as "author.username", u.email as "author.email",
-        u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+                u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
       FROM posts p
       JOIN users u ON u.id = p.author_id
       ORDER BY p.created_at DESC
@@ -59,7 +59,7 @@ export async function selectSearchPosts(q, cursor, limit) {
         query = sql`
       SELECT p.*,
         u.id as "author.id", u.username as "author.username", u.email as "author.email",
-        u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+                u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
       FROM posts p
       JOIN users u ON u.id = p.author_id
       WHERE p.content ILIKE ${'%' + q + '%'} AND p.created_at < ${cursor}
@@ -69,7 +69,7 @@ export async function selectSearchPosts(q, cursor, limit) {
         query = sql`
       SELECT p.*,
         u.id as "author.id", u.username as "author.username", u.email as "author.email",
-        u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+                u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
       FROM posts p
       JOIN users u ON u.id = p.author_id
       WHERE p.content ILIKE ${'%' + q + '%'}
@@ -88,7 +88,7 @@ export async function selectExplorePosts(topicId, cursor, limit) {
             query = sql`
         SELECT p.*,
           u.id as "author.id", u.username as "author.username", u.email as "author.email",
-          u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+                    u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
         FROM posts p
         JOIN users u ON u.id = p.author_id
         JOIN post_topics pt ON pt.post_id = p.id
@@ -99,7 +99,7 @@ export async function selectExplorePosts(topicId, cursor, limit) {
             query = sql`
         SELECT p.*,
           u.id as "author.id", u.username as "author.username", u.email as "author.email",
-          u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+                    u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
         FROM posts p
         JOIN users u ON u.id = p.author_id
         JOIN post_topics pt ON pt.post_id = p.id
@@ -111,7 +111,7 @@ export async function selectExplorePosts(topicId, cursor, limit) {
         query = sql`
         SELECT p.*,
           u.id as "author.id", u.username as "author.username", u.email as "author.email",
-          u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+                    u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
         FROM posts p
         JOIN users u ON u.id = p.author_id
         WHERE p.created_at < ${cursor}
@@ -121,7 +121,7 @@ export async function selectExplorePosts(topicId, cursor, limit) {
         query = sql`
         SELECT p.*,
           u.id as "author.id", u.username as "author.username", u.email as "author.email",
-          u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+                    u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
         FROM posts p
         JOIN users u ON u.id = p.author_id
         ORDER BY p.created_at DESC
@@ -136,7 +136,7 @@ export async function selectPostById(id) {
     const { rows } = await sql`
     SELECT p.*,
       u.id as "author.id", u.username as "author.username", u.email as "author.email",
-      u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
+            u.avatar_url as "author.avatar_url", u.date_of_birth as "author.date_of_birth", u.is_admin as "author.is_admin", u.created_at as "author.created_at"
     FROM posts p JOIN users u ON u.id = p.author_id WHERE p.id = ${id}`;
     return rows[0] || null;
 }

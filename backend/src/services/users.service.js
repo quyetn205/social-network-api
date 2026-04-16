@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { buildPublicUploadUrl } from '../middleware/upload.js';
 import { err, getUserFromToken, ok } from '../controllers/shared.controller.js';
 import {
     countFollowers,
@@ -35,6 +36,9 @@ export async function PUT_update_me(req, res) {
 
     const body = req.body;
     const { username, date_of_birth, avatar_url } = body;
+    const uploadedAvatarUrl = req.file
+        ? buildPublicUploadUrl(req, req.file.filename)
+        : avatar_url;
 
     if (username !== undefined) {
         if (!/^[a-zA-Z0-9_]{4,20}$/.test(username)) {
@@ -52,7 +56,7 @@ export async function PUT_update_me(req, res) {
     const updated = await updateMe(user.id, {
         username,
         date_of_birth,
-        avatar_url
+        avatar_url: uploadedAvatarUrl
     });
     return ok(res, updated);
 }
@@ -116,6 +120,7 @@ export async function GET_user_posts(req, res, userId) {
             id: post['author.id'],
             username: post['author.username'],
             email: post['author.email'],
+            avatar_url: post['author.avatar_url'],
             date_of_birth: post['author.date_of_birth'],
             is_admin: post['author.is_admin'],
             created_at: post['author.created_at']

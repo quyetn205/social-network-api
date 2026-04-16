@@ -52,6 +52,7 @@ function mapPost(post, topicsMap, extra = {}) {
             id: post['author.id'],
             username: post['author.username'],
             email: post['author.email'],
+            avatar_url: post['author.avatar_url'],
             date_of_birth: post['author.date_of_birth'],
             is_admin: post['author.is_admin'],
             created_at: post['author.created_at']
@@ -217,6 +218,7 @@ export async function POST_create_post(req, res) {
             id: user.id,
             username: user.username,
             email: user.email,
+            avatar_url: user.avatar_url,
             date_of_birth: user.date_of_birth,
             is_admin: user.is_admin,
             created_at: user.created_at
@@ -301,6 +303,7 @@ export async function PUT_update_post(req, res, postId) {
             id: user.id,
             username: user.username,
             email: user.email,
+            avatar_url: user.avatar_url,
             date_of_birth: user.date_of_birth,
             is_admin: user.is_admin,
             created_at: user.created_at
@@ -344,6 +347,7 @@ export async function GET_post(req, res, id) {
             id: post['author.id'],
             username: post['author.username'],
             email: post['author.email'],
+            avatar_url: post['author.avatar_url'],
             date_of_birth: post['author.date_of_birth'],
             is_admin: post['author.is_admin'],
             created_at: post['author.created_at']
@@ -415,6 +419,7 @@ export async function POST_create_comment(req, res, postId) {
             id: user.id,
             username: user.username,
             email: user.email,
+            avatar_url: user.avatar_url,
             created_at: user.created_at
         }
     });
