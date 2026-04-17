@@ -5,7 +5,6 @@ export interface User {
     username: string;
     email: string;
     avatar_url?: string;
-    friend?: boolean;
     date_of_birth: string | null;
     is_admin: boolean;
     created_at: string;
@@ -59,7 +58,6 @@ export interface LikeStatus {
 
 export interface FollowStatus {
     following: boolean;
-    friend?: boolean;
 }
 
 export interface TokenResponse {
