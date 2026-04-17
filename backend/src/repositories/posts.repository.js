@@ -1,20 +1,17 @@
 import { sql } from '../../db.js';
 
-// Lấy danh sách chủ đề ưu tiên của người dùng.
 export async function selectPreferenceTopicIds(userId) {
     const { rows } =
         await sql`SELECT topic_ids FROM user_preferences WHERE user_id = ${userId}`;
     return rows[0]?.topic_ids || [];
 }
 
-// Lấy danh sách id người dùng mà một người đang theo dõi.
 export async function selectFollowingIds(userId) {
     const { rows } =
         await sql`SELECT following_id FROM follows WHERE follower_id = ${userId}`;
     return rows.map((row) => row.following_id);
 }
 
-// Tạo map post_id -> danh sách chủ đề của bài viết.
 export async function selectTopicsMap() {
     const { rows: postTopics } =
         await sql`SELECT pt.post_id, t.id, t.name, t.description FROM post_topics pt JOIN topics t ON t.id = pt.topic_id`;
@@ -30,7 +27,6 @@ export async function selectTopicsMap() {
     return topicsMap;
 }
 
-// Lấy danh sách bài viết cho feed theo cursor.
 export async function selectFeedPosts(cursor, limit) {
     let query;
     if (cursor) {
@@ -57,7 +53,6 @@ export async function selectFeedPosts(cursor, limit) {
     return { rows: rows.slice(0, limit), hasMore: rows.length > limit };
 }
 
-// Tìm bài viết theo nội dung và hỗ trợ phân trang cursor.
 export async function selectSearchPosts(q, cursor, limit) {
     let query;
     if (cursor) {
@@ -85,7 +80,6 @@ export async function selectSearchPosts(q, cursor, limit) {
     return { rows: rows.slice(0, limit), hasMore: rows.length > limit };
 }
 
-// Lấy bài khám phá theo chủ đề (nếu có) và phân trang cursor.
 export async function selectExplorePosts(topicId, cursor, limit) {
     let query;
     if (topicId) {
@@ -138,7 +132,6 @@ export async function selectExplorePosts(topicId, cursor, limit) {
     return { rows: rows.slice(0, limit), hasMore: rows.length > limit };
 }
 
-// Lấy chi tiết một bài viết kèm thông tin tác giả.
 export async function selectPostById(id) {
     const { rows } = await sql`
     SELECT p.*,
@@ -148,7 +141,6 @@ export async function selectPostById(id) {
     return rows[0] || null;
 }
 
-// Lấy danh sách chủ đề của một bài viết.
 export async function selectPostTopicsForPost(postId) {
     const { rows } = await sql`
     SELECT t.id, t.name, t.description FROM post_topics pt
@@ -156,14 +148,12 @@ export async function selectPostTopicsForPost(postId) {
     return rows;
 }
 
-// Lấy thông tin tác giả của bài viết.
 export async function selectPostAuthor(postId) {
     const { rows } =
         await sql`SELECT id, author_id FROM posts WHERE id = ${postId}`;
     return rows[0] || null;
 }
 
-// Tạo bài viết mới.
 export async function insertPost(
     content,
     authorId,
@@ -177,14 +167,12 @@ export async function insertPost(
     return rows[0];
 }
 
-// Gắn danh sách chủ đề cho bài viết.
 export async function insertPostTopics(postId, topicIds) {
     for (const topicId of topicIds || []) {
         await sql`INSERT INTO post_topics (post_id, topic_id) VALUES (${postId}, ${topicId}) ON CONFLICT DO NOTHING`;
     }
 }
 
-// Thay toàn bộ chủ đề của bài viết bằng danh sách mới.
 export async function replacePostTopics(postId, topicIds) {
     await sql`DELETE FROM post_topics WHERE post_id = ${postId}`;
     for (const topicId of topicIds || []) {
@@ -192,7 +180,6 @@ export async function replacePostTopics(postId, topicIds) {
     }
 }
 
-// Cập nhật nội dung bài viết.
 export async function updatePostContent(postId, content) {
     const { rows } = await sql`
     UPDATE posts SET
@@ -203,7 +190,6 @@ export async function updatePostContent(postId, content) {
     return rows[0] || null;
 }
 
-// Cập nhật nội dung, ảnh và quyền hiển thị bài viết.
 export async function updatePostDetails(postId, content, imageUrl, visibility) {
     const { rows } = await sql`
         UPDATE posts SET
@@ -216,12 +202,10 @@ export async function updatePostDetails(postId, content, imageUrl, visibility) {
     return rows[0] || null;
 }
 
-// Xóa bài viết theo id.
 export async function deletePost(postId) {
     await sql`DELETE FROM posts WHERE id = ${postId}`;
 }
 
-// Tạo bình luận mới cho bài viết.
 export async function insertComment(content, postId, userId, parentId) {
     const { rows } = await sql`
     INSERT INTO comments (content, post_id, author_id, parent_id)
@@ -230,7 +214,6 @@ export async function insertComment(content, postId, userId, parentId) {
     return rows[0];
 }
 
-// Lấy danh sách bình luận của bài viết theo cursor.
 export async function selectComments(postId, cursor, limit) {
     let query;
     if (cursor) {
@@ -255,36 +238,30 @@ export async function selectComments(postId, cursor, limit) {
     return { rows: rows.slice(0, limit), hasMore: rows.length > limit };
 }
 
-// Tăng bộ đếm số bình luận của bài viết.
 export async function incrementCommentsCount(postId) {
     await sql`UPDATE posts SET comments_count = comments_count + 1 WHERE id = ${postId}`;
 }
 
-// Kiểm tra người dùng đã like bài viết hay chưa.
 export async function selectLikeStatus(userId, postId) {
     const { rows } =
         await sql`SELECT 1 FROM likes WHERE user_id = ${userId} AND post_id = ${postId} LIMIT 1`;
     return rows.length > 0;
 }
 
-// Tạo bản ghi like cho bài viết.
 export async function insertLike(userId, postId) {
     await sql`INSERT INTO likes (user_id, post_id) VALUES (${userId}, ${postId})`;
 }
 
-// Tăng bộ đếm lượt like của bài viết.
 export async function incrementLikesCount(postId) {
     await sql`UPDATE posts SET likes_count = likes_count + 1 WHERE id = ${postId}`;
 }
 
-// Xóa like của người dùng trên bài viết.
 export async function deleteLike(userId, postId) {
     const result =
         await sql`DELETE FROM likes WHERE user_id = ${userId} AND post_id = ${postId} RETURNING *`;
     return result.rowCount > 0;
 }
 
-// Giảm bộ đếm lượt like và không cho xuống dưới 0.
 export async function decrementLikesCount(postId) {
     await sql`UPDATE posts SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = ${postId}`;
 }

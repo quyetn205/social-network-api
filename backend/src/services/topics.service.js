@@ -6,13 +6,11 @@ import {
     upsertPreferences
 } from '../repositories/topics.repository.js';
 
-// Lấy toàn bộ danh sách chủ đề.
 export async function GET_topics(req, res) {
     const rows = await selectTopics();
     return ok(res, rows);
 }
 
-// Lấy danh sách chủ đề ưu tiên của người dùng hiện tại.
 export async function GET_preferences(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
@@ -22,7 +20,6 @@ export async function GET_preferences(req, res) {
     return ok(res, { topics });
 }
 
-// Cập nhật danh sách chủ đề ưu tiên của người dùng hiện tại.
 export async function PUT_update_preferences(req, res) {
     const user = await getUserFromToken(req);
     if (!user) return err(res, 401, 'Could not validate credentials');
