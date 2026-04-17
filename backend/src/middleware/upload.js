@@ -73,8 +73,7 @@ export async function deleteUploadedImageUrl(imageUrl) {
     if (!imageUrl) return;
 
     try {
-        const url = new URL(imageUrl);
-        const filename = path.basename(url.pathname);
+        const filename = extractStoredUploadName(imageUrl);
         if (!filename) return;
         await deleteUploadedFile(path.join(postUploadsDir, filename));
     } catch {
@@ -84,4 +83,22 @@ export async function deleteUploadedImageUrl(imageUrl) {
 
 export function buildPublicUploadUrl(req, filename) {
     return `${req.protocol}://${req.get('host')}/uploads/${filename}`;
+}
+
+export function extractStoredUploadName(value) {
+    if (!value || typeof value !== 'string') return '';
+
+    try {
+        const url = new URL(value);
+        return path.basename(url.pathname);
+    } catch {
+        return path.basename(value);
+    }
+}
+
+export function resolvePublicUploadUrl(req, value) {
+    if (!value) return '';
+    if (typeof value !== 'string') return '';
+    if (/^https?:\/\//i.test(value)) return value;
+    return buildPublicUploadUrl(req, extractStoredUploadName(value));
 }

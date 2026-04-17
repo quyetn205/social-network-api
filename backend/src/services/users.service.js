@@ -1,5 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { buildPublicUploadUrl } from '../middleware/upload.js';
+import {
+    extractStoredUploadName,
+    resolvePublicUploadUrl
+} from '../middleware/upload.js';
 import { err, getUserFromToken, ok } from '../controllers/shared.controller.js';
 import {
     countFollowers,
@@ -25,7 +28,7 @@ export async function GET_users_me(req, res) {
         id: user.id,
         username: user.username,
         email: user.email,
-        avatar_url: user.avatar_url || '',
+        avatar_url: resolvePublicUploadUrl(req, user.avatar_url || ''),
         date_of_birth: user.date_of_birth,
         is_admin: user.is_admin,
         created_at: user.created_at
@@ -39,9 +42,11 @@ export async function PUT_update_me(req, res) {
 
     const body = req.body;
     const { username, date_of_birth, avatar_url } = body;
-    const uploadedAvatarUrl = req.file
-        ? buildPublicUploadUrl(req, req.file.filename)
-        : avatar_url;
+    const uploadedAvatarName = req.file
+        ? req.file.filename
+        : avatar_url !== undefined
+          ? extractStoredUploadName(avatar_url)
+          : undefined;
 
     if (username !== undefined) {
         if (!/^[a-zA-Z0-9_]{4,20}$/.test(username)) {
@@ -59,9 +64,12 @@ export async function PUT_update_me(req, res) {
     const updated = await updateMe(user.id, {
         username,
         date_of_birth,
-        avatar_url: uploadedAvatarUrl
+        avatar_url: uploadedAvatarName
     });
-    return ok(res, updated);
+    return ok(res, {
+        ...updated,
+        avatar_url: resolvePublicUploadUrl(req, updated?.avatar_url || '')
+    });
 }
 
 // Xóa tài khoản hiện tại.
@@ -76,7 +84,10 @@ export async function DELETE_delete_me(req, res) {
 export async function GET_user_by_id(req, res, id) {
     const user = await selectPublicUserById(id);
     if (!user) return err(res, 404, 'User not found');
-    return ok(res, user);
+    return ok(res, {
+        ...user,
+        avatar_url: resolvePublicUploadUrl(req, user.avatar_url || '')
+    });
 }
 
 // Lấy hồ sơ công khai của người dùng.
@@ -92,6 +103,7 @@ export async function GET_user_profile(req, res, id) {
 
     return ok(res, {
         ...user,
+        avatar_url: resolvePublicUploadUrl(req, user.avatar_url || ''),
         followers_count,
         following_count,
         posts_count
@@ -157,7 +169,10 @@ export async function GET_user_posts(req, res, userId) {
                 id: post['author.id'],
                 username: post['author.username'],
                 email: post['author.email'],
-                avatar_url: post['author.avatar_url'],
+                avatar_url: resolvePublicUploadUrl(
+                    req,
+                    post['author.avatar_url']
+                ),
                 date_of_birth: post['author.date_of_birth'],
                 is_admin: post['author.is_admin'],
                 created_at: post['author.created_at']

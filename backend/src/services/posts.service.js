@@ -7,9 +7,10 @@ import {
     ok
 } from '../controllers/shared.controller.js';
 import {
-    buildPublicUploadUrl,
     deleteUploadedImageUrl,
-    deleteUploadedFile
+    deleteUploadedFile,
+    extractStoredUploadName,
+    resolvePublicUploadUrl
 } from '../middleware/upload.js';
 import {
     decrementLikesCount,
@@ -40,11 +41,11 @@ import {
 const ALLOWED_VISIBILITIES = new Set(['public', 'friend', 'private']);
 
 // Chuyển hàng bài viết thành payload trả về.
-function mapPost(post, topicsMap, extra = {}) {
+function mapPost(req, post, topicsMap, extra = {}) {
     return {
         id: post.id,
         content: post.content,
-        image_url: post.image_url || null,
+        image_url: resolvePublicUploadUrl(req, post.image_url || null),
         visibility: post.visibility || 'public',
         author_id: post.author_id,
         created_at: post.created_at,
@@ -56,7 +57,7 @@ function mapPost(post, topicsMap, extra = {}) {
             id: post['author.id'],
             username: post['author.username'],
             email: post['author.email'],
-            avatar_url: post['author.avatar_url'],
+            avatar_url: resolvePublicUploadUrl(req, post['author.avatar_url']),
             date_of_birth: post['author.date_of_birth'],
             is_admin: post['author.is_admin'],
             created_at: post['author.created_at']
@@ -66,7 +67,7 @@ function mapPost(post, topicsMap, extra = {}) {
 }
 
 // Chuyển hàng bình luận thành payload trả về.
-function mapComment(comment) {
+function mapComment(req, comment) {
     return {
         id: comment.id,
         content: comment.content,
@@ -78,7 +79,10 @@ function mapComment(comment) {
             id: comment['author.id'],
             username: comment['author.username'],
             email: comment['author.email'],
-            avatar_url: comment['author.avatar_url'],
+            avatar_url: resolvePublicUploadUrl(
+                req,
+                comment['author.avatar_url']
+            ),
             created_at: comment['author.created_at']
         }
     };
@@ -167,7 +171,7 @@ export async function GET_feed(req, res) {
         if (postTopicIds.some((id) => preferredTopicIds.includes(id))) {
             score += 2;
         }
-        return mapPost(post, topicsMap, { feed_score: score });
+        return mapPost(req, post, topicsMap, { feed_score: score });
     });
 
     items.sort(
@@ -204,7 +208,7 @@ export async function GET_search_posts(req, res) {
                 authorFollowingCache
             )
         ) {
-            items.push(mapPost(post, topicsMap));
+            items.push(mapPost(req, post, topicsMap));
         }
     }
 
@@ -215,10 +219,8 @@ export async function GET_search_posts(req, res) {
 
 // Lấy bài viết khám phá.
 export async function GET_explore(req, res) {
-    await getUserFromToken(req);
-
     const topicId = req.query.topic_id;
-    const cursor = req.query.cursor;
+    let cursor = req.query.cursor || null;
     const limit = parseInt(req.query.limit || '10', 10);
 
     const user = await getUserFromToken(req);
@@ -226,28 +228,42 @@ export async function GET_explore(req, res) {
     const viewerFollowingIds = await selectFollowingIds(user.id);
     const authorFollowingCache = new Map();
     const topicsMap = await selectTopicsMap();
-    const { rows: posts, hasMore } = await selectExplorePosts(
-        topicId,
-        cursor,
-        limit
-    );
     const items = [];
-    for (const post of posts) {
-        if (
-            await canViewPost(
-                post,
-                user,
-                viewerFollowingIds,
-                authorFollowingCache
-            )
-        ) {
-            items.push(mapPost(post, topicsMap));
+
+    // Quét thêm các batch nếu batch hiện tại bị lọc sạch do quyền hiển thị.
+    let hasMore = true;
+    while (items.length < limit && hasMore) {
+        const { rows: posts, hasMore: batchHasMore } = await selectExplorePosts(
+            topicId,
+            cursor,
+            limit
+        );
+
+        if (posts.length === 0) {
+            hasMore = false;
+            cursor = null;
+            break;
         }
+
+        for (const post of posts) {
+            if (
+                await canViewPost(
+                    post,
+                    user,
+                    viewerFollowingIds,
+                    authorFollowingCache
+                )
+            ) {
+                items.push(mapPost(req, post, topicsMap));
+            }
+        }
+
+        cursor = posts[posts.length - 1].created_at;
+        hasMore = batchHasMore;
     }
 
-    const next_cursor =
-        hasMore && items.length > 0 ? items[items.length - 1].created_at : null;
-    return ok(res, { items, next_cursor });
+    const next_cursor = hasMore ? cursor : null;
+    return ok(res, { items: items.slice(0, limit), next_cursor });
 }
 
 // Tạo bài viết mới.
@@ -260,9 +276,7 @@ export async function POST_create_post(req, res) {
     const visibility = normalizeVisibility(body.visibility);
     const normalizedContent = typeof content === 'string' ? content.trim() : '';
     const normalizedTopicIds = parseTopicIds(topic_ids);
-    const imageUrl = req.file
-        ? buildPublicUploadUrl(req, req.file.filename)
-        : null;
+    const imageUrl = req.file ? req.file.filename : null;
 
     if (normalizedContent.length === 0 && !imageUrl) {
         await deleteUploadedFile(req.file?.path);
@@ -293,7 +307,7 @@ export async function POST_create_post(req, res) {
     return created(res, {
         id: post.id,
         content: post.content,
-        image_url: post.image_url || null,
+        image_url: resolvePublicUploadUrl(req, post.image_url || null),
         author_id: post.author_id,
         created_at: post.created_at,
         updated_at: post.updated_at,
@@ -305,7 +319,7 @@ export async function POST_create_post(req, res) {
             id: user.id,
             username: user.username,
             email: user.email,
-            avatar_url: user.avatar_url,
+            avatar_url: resolvePublicUploadUrl(req, user.avatar_url),
             date_of_birth: user.date_of_birth,
             is_admin: user.is_admin,
             created_at: user.created_at
@@ -339,7 +353,7 @@ export async function PUT_update_post(req, res, postId) {
 
     const previousImageUrl = existing.image_url || null;
     const nextImageUrl = req.file
-        ? buildPublicUploadUrl(req, req.file.filename)
+        ? req.file.filename
         : removeImage
           ? null
           : previousImageUrl;
@@ -393,7 +407,7 @@ export async function PUT_update_post(req, res, postId) {
     return ok(res, {
         id: post.id,
         content: post.content,
-        image_url: post.image_url || null,
+        image_url: resolvePublicUploadUrl(req, post.image_url || null),
         author_id: post.author_id,
         created_at: post.created_at,
         updated_at: post.updated_at,
@@ -405,7 +419,7 @@ export async function PUT_update_post(req, res, postId) {
             id: user.id,
             username: user.username,
             email: user.email,
-            avatar_url: user.avatar_url,
+            avatar_url: resolvePublicUploadUrl(req, user.avatar_url),
             date_of_birth: user.date_of_birth,
             is_admin: user.is_admin,
             created_at: user.created_at
@@ -453,7 +467,7 @@ export async function GET_post(req, res, id) {
     return ok(res, {
         id: post.id,
         content: post.content,
-        image_url: post.image_url || null,
+        image_url: resolvePublicUploadUrl(req, post.image_url || null),
         visibility: post.visibility || 'public',
         author_id: post.author_id,
         created_at: post.created_at,
@@ -465,7 +479,7 @@ export async function GET_post(req, res, id) {
             id: post['author.id'],
             username: post['author.username'],
             email: post['author.email'],
-            avatar_url: post['author.avatar_url'],
+            avatar_url: resolvePublicUploadUrl(req, post['author.avatar_url']),
             date_of_birth: post['author.date_of_birth'],
             is_admin: post['author.is_admin'],
             created_at: post['author.created_at']
@@ -500,7 +514,7 @@ export async function GET_comments(req, res, postId) {
         cursor,
         limit
     );
-    const items = comments.map(mapComment);
+    const items = comments.map((comment) => mapComment(req, comment));
     const next_cursor =
         hasMore && items.length > 0 ? String(items[items.length - 1].id) : null;
     return ok(res, { comments: items, next_cursor });
@@ -552,7 +566,7 @@ export async function POST_create_comment(req, res, postId) {
                 actor_username: user.username,
                 post_id: Number(postId)
             },
-            user.avatar_url
+            extractStoredUploadName(user.avatar_url)
         );
     }
 
@@ -567,7 +581,7 @@ export async function POST_create_comment(req, res, postId) {
             id: user.id,
             username: user.username,
             email: user.email,
-            avatar_url: user.avatar_url,
+            avatar_url: resolvePublicUploadUrl(req, user.avatar_url),
             created_at: user.created_at
         }
     });
@@ -627,7 +641,7 @@ export async function POST_like(req, res, postId) {
                     actor_username: user.username,
                     post_id: Number(postId)
                 },
-                user.avatar_url
+                extractStoredUploadName(user.avatar_url)
             );
         }
         return created(res, { liked: true });

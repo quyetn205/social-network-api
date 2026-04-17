@@ -6,6 +6,10 @@ import {
     ok
 } from '../controllers/shared.controller.js';
 import {
+    extractStoredUploadName,
+    resolvePublicUploadUrl
+} from '../middleware/upload.js';
+import {
     deleteFollow,
     insertFollow,
     selectFollowRows,
@@ -37,7 +41,7 @@ export async function POST_follow(req, res, userId) {
                 actor_id: me.id,
                 actor_username: me.username
             },
-            me.avatar_url
+            extractStoredUploadName(me.avatar_url)
         );
         return created(res, { following: true });
     } catch (error) {
@@ -72,13 +76,21 @@ export async function GET_followers(req, res, userId) {
         cursor,
         limit
     );
-    const items = rows.map((r) => ({
-        id: r.id,
-        username: r.username,
-        email: r.email,
-        avatar_url: r.avatar_url,
-        created_at: r.created_at
-    }));
+    const items = await Promise.all(
+        rows.map(async (r) => {
+            const friend =
+                me.id !== Number(r.id) &&
+                (await selectFriendStatus(me.id, r.id));
+            return {
+                id: r.id,
+                username: r.username,
+                email: r.email,
+                avatar_url: r.avatar_url,
+                created_at: r.created_at,
+                friend
+            };
+        })
+    );
     const next_cursor =
         hasMore && items.length > 0
             ? String(rows[rows.length - 1].follow_created_at)
@@ -97,13 +109,21 @@ export async function GET_following(req, res, userId) {
         cursor,
         limit
     );
-    const items = rows.map((r) => ({
-        id: r.id,
-        username: r.username,
-        email: r.email,
-        avatar_url: r.avatar_url,
-        created_at: r.created_at
-    }));
+    const items = await Promise.all(
+        rows.map(async (r) => {
+            const friend =
+                me.id !== Number(r.id) &&
+                (await selectFriendStatus(me.id, r.id));
+            return {
+                id: r.id,
+                username: r.username,
+                email: r.email,
+                avatar_url: r.avatar_url,
+                created_at: r.created_at,
+                friend
+            };
+        })
+    );
     const next_cursor =
         hasMore && items.length > 0
             ? String(rows[rows.length - 1].follow_created_at)
